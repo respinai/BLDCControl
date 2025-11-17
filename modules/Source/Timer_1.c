@@ -196,14 +196,6 @@ void SetPWM_EXH (u16 PulsePercent)
   EXH_TIM->CCR1 = Temp_PulseWidth;
 }
 
-void SetPWM_EXH2 (u16 PulsePercent)
-{
-  u16		Temp_PulseWidth;
-  Temp_PulseWidth = (u16) (((u32) EXH2_PulseWidth * PulsePercent) / 10000);
-  //* Set the Capture Compare Register value 
-  //  Timer4_CH2 usd for EXH2
-  EXH_TIM->CCR2 = Temp_PulseWidth;
-}
 void SetPWM_TIM3_Valve (u16 PulsePercent)
 {
   if(PulsePercent > VALVE_TIM3_PWM_SCALE)

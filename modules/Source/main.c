@@ -112,7 +112,6 @@ int main(void)
       if(Valve_CMD_FLG == TRUE)
       {
         SetPWM_EXH(DATA_Sensors.Valve_CMD);
-        SetPWM_EXH2(DATA_Sensors.Valve2_CMD);
         SetPWM_TIM3_Valve(DATA_Sensors.Valve3_CMD);
 
         Valve_CMD_FLG = FALSE;

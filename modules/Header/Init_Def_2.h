@@ -118,10 +118,6 @@
 #define     EXH_CH                  1
 #define     EXH_PulseWidth          Timer4_PulseWidth
 
-#define     EXH_TIM                 TIM4
-#define     EXH_CH2                  2
-#define     EXH2_PulseWidth          Timer4_PulseWidth
-
 #define     VALVE_TIM3_GPIO_PORT     GPIOC
 #define     VALVE_TIM3_GPIO_PIN      GPIO_Pin_8
 #define     VALVE_TIM3_GPIO_SOURCE   GPIO_PinSource8

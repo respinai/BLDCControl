@@ -89,7 +89,6 @@ typedef struct{
   s16   Press_INH;
   u16   Flow_EXH;
   u16   Valve_CMD;
-  u16   Valve2_CMD;
   u16   Valve3_CMD;
   STRUCT_PACKETBIT_HW_ERROR  HWErr;
 
@@ -129,7 +128,6 @@ extern  void Flow_SENSIRION_EXH_ReadDATA(void);
 extern  void    SendCOM2 (u8 mode);
 extern  void Read_Press_INH_EXH(void);
 extern  void SetPWM_EXH (u16 PulsePercent);
-extern  void SetPWM_EXH2 (u16 PulsePercent);
 extern  void SetPWM_TIM3_Valve (u16 PulsePercent);
 
 //------------------------------------------------------------------------------|
