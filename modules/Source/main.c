@@ -109,13 +109,14 @@ int main(void)
       Read_Press_INH_EXH(); 
     }
     //---------------------
-    if(Valve_CMD_FLG == TRUE)
-    {
-      SetPWM_EXH(DATA_Sensors.Valve_CMD);
-      SetPWM_EXH2(DATA_Sensors.Valve2_CMD);
+      if(Valve_CMD_FLG == TRUE)
+      {
+        SetPWM_EXH(DATA_Sensors.Valve_CMD);
+        SetPWM_EXH2(DATA_Sensors.Valve2_CMD);
+        SetPWM_TIM3_Valve(DATA_Sensors.Valve3_CMD);
 
-      Valve_CMD_FLG = FALSE;
-    }
+        Valve_CMD_FLG = FALSE;
+      }
     //---------------------
     if(Timer.Flg_50ms)
     {

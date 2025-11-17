@@ -35,7 +35,7 @@
 
 //==================================================
 //#define         CALCULATE_FREE_TIME(T1,T2)              ((u16)((T2+0x10000) - T1))  // Output is uSec 
-#define         FREE_CNT_100us                          TIM3->CNT     // Timer3 is Free Counter
+#define         FREE_CNT_100us                          TIM6->CNT     // Timer6 is Free Counter
 #define         FREE_CNT_6ns                            TIM9->CNT     // Timer9 is Free Counter
 //================================================================================
 
@@ -90,6 +90,7 @@ typedef struct{
   u16   Flow_EXH;
   u16   Valve_CMD;
   u16   Valve2_CMD;
+  u16   Valve3_CMD;
   STRUCT_PACKETBIT_HW_ERROR  HWErr;
 
 
@@ -129,6 +130,7 @@ extern  void    SendCOM2 (u8 mode);
 extern  void Read_Press_INH_EXH(void);
 extern  void SetPWM_EXH (u16 PulsePercent);
 extern  void SetPWM_EXH2 (u16 PulsePercent);
+extern  void SetPWM_TIM3_Valve (u16 PulsePercent);
 
 //------------------------------------------------------------------------------|
 #endif /* __MAIN_H */

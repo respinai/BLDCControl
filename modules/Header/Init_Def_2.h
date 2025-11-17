@@ -122,6 +122,15 @@
 #define     EXH_CH2                  2
 #define     EXH2_PulseWidth          Timer4_PulseWidth
 
+#define     VALVE_TIM3_GPIO_PORT     GPIOC
+#define     VALVE_TIM3_GPIO_PIN      GPIO_Pin_8
+#define     VALVE_TIM3_GPIO_SOURCE   GPIO_PinSource8
+#define     VALVE_TIM3_GPIO_CLK      RCC_AHB1Periph_GPIOC
+#define     VALVE_TIM3_AF            GPIO_AF_TIM3
+#define     VALVE_TIM3               TIM3
+#define     VALVE_TIM3_CHANNEL       TIM_Channel_3
+#define     VALVE_TIM3_PWM_SCALE     10000U
+
 //---------------------------------------------
 /* Actuator Names  */
 typedef enum 

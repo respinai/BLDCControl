@@ -8,11 +8,16 @@
 //-----------------------------------------------------------------------------|
 TIM_TimeBaseInitTypeDef                 TIM_TimeBaseInitStruct;	
 TIM_OCInitTypeDef 		        TIM_OCInitStruct;
+static void ValvePWM_GPIO_Init(void);
 //-----------------------------------------------------------------------------|
 extern      NVIC_InitTypeDef		NVIC_InitStructure ;
 extern        STRUCT_PACKET_PWM           PWM;
 extern        STRUCT_PACKET_PWM           PWMS;
 extern      UNION_HALLDATA_READ                     HallSensor;
+
+#define VALVE_PWM_TIMER_PRESCALER    83U    /* 84MHz / (83+1) = 1MHz */
+#define VALVE_PWM_TIMER_PERIOD       999U   /* 1MHz / (999+1) = 1kHz */
+#define VALVE_PWM_TIMER_TICKS        (VALVE_PWM_TIMER_PERIOD + 1U)
 
 //-----------------------------------------------------------------------------|
 void Timer_INITIALIZE(void)
@@ -28,6 +33,7 @@ void TIM_ConfigPort (void)
   Timer_3_Initialize();   //,   APB1_FRQ = 84 MHz   
   Timer_4_Initialize();  
   Timer_5_Initialize();   //,   APB1_FRQ = 84 MHz     
+  Timer_6_Initialize();   //,   APB1_FRQ = 84 MHz (100us free counter)
 
 }
 //-----------------------------------------------------------------------------|
@@ -92,18 +98,25 @@ void Timer_2_Initialize(void)           /*  Main Counter  :::  84MHz */
     //  Start Timer 
   TIM_Cmd(TIM2, ENABLE);
 }//-----------------------------------------------------------------------------|
-void Timer_3_Initialize(void)                   /*  Free Counter */ 
-{                                   // This counter will increment every 100 usec
+void Timer_3_Initialize(void)
+{
+  ValvePWM_GPIO_Init();
   RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE); ///APB1_FRQ = Input Frq = 84MHz 
-  TIM_TimeBaseInitStruct.TIM_Prescaler = 8399; // Input Frq  = 84MHz / (8399+1) = 10,000Hz
+  TIM_TimeBaseInitStruct.TIM_Prescaler = VALVE_PWM_TIMER_PRESCALER;
   TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up; 
-  TIM_TimeBaseInitStruct.TIM_Period = 0xFFFF;	// 10,000Hz => T = 100uSec // between 0x0000 and 0xFFFF.
+  TIM_TimeBaseInitStruct.TIM_Period = VALVE_PWM_TIMER_PERIOD;
   TIM_TimeBaseInitStruct.TIM_ClockDivision = TIM_CKD_DIV1;
   TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;
-  TIM_TimeBaseInit(TIM3, &TIM_TimeBaseInitStruct);
-  //  Start Timer 
-  TIM_Cmd(TIM3, ENABLE);
-  //  
+  TIM_TimeBaseInit(VALVE_TIM3, &TIM_TimeBaseInitStruct);
+
+  TIM_OCInitStruct.TIM_OCMode = TIM_OCMode_PWM1;
+  TIM_OCInitStruct.TIM_OutputState = TIM_OutputState_Enable;
+  TIM_OCInitStruct.TIM_Pulse = 0;
+  TIM_OCInitStruct.TIM_OCPolarity = TIM_OCPolarity_High;
+  TIM_OC3Init(VALVE_TIM3, &TIM_OCInitStruct);
+  TIM_OC3PreloadConfig(VALVE_TIM3, TIM_OCPreload_Enable);
+
+  TIM_Cmd(VALVE_TIM3, ENABLE);
 }
 //-----------------------------------------------------------------------------|
 void Timer_5_Initialize(void)
@@ -118,6 +131,18 @@ void Timer_5_Initialize(void)
   
   //  
   TIM_Cmd(TIM5, ENABLE);
+}
+//-----------------------------------------------------------------------------|
+void Timer_6_Initialize(void)
+{
+  RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM6, ENABLE); ///APB1_FRQ = 84MHz 
+  TIM_TimeBaseInitStruct.TIM_Prescaler = 8399; // Input Frq  = 84MHz / (8399+1) = 10,000Hz
+  TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up; 
+  TIM_TimeBaseInitStruct.TIM_Period = 0xFFFF;	// 10,000Hz => T = 100uSec
+  TIM_TimeBaseInitStruct.TIM_ClockDivision = TIM_CKD_DIV1;
+  TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;
+  TIM_TimeBaseInit(TIM6, &TIM_TimeBaseInitStruct);
+  TIM_Cmd(TIM6, ENABLE);
 }
 //-----------------------------------------------------------------------------|
 //-----------------------------------------------------------------------------|
@@ -178,6 +203,19 @@ void SetPWM_EXH2 (u16 PulsePercent)
   //* Set the Capture Compare Register value 
   //  Timer4_CH2 usd for EXH2
   EXH_TIM->CCR2 = Temp_PulseWidth;
+}
+void SetPWM_TIM3_Valve (u16 PulsePercent)
+{
+  if(PulsePercent > VALVE_TIM3_PWM_SCALE)
+  {
+    PulsePercent = VALVE_TIM3_PWM_SCALE;
+  }
+  u32 pulse = ((u32)VALVE_PWM_TIMER_TICKS * PulsePercent) / VALVE_TIM3_PWM_SCALE;
+  if(pulse > VALVE_PWM_TIMER_PERIOD)
+  {
+    pulse = VALVE_PWM_TIMER_PERIOD;
+  }
+  TIM_SetCompare3(VALVE_TIM3, (u16)pulse);
 }
 //-----------------------------------------------------------------
 void    ReachToTarget(void)
@@ -489,6 +527,20 @@ void  MoveBLDC(u8  Flg_state )
     
   }//switch
   
+}
+//-----------------------------------------------------------------------------|
+
+static void ValvePWM_GPIO_Init(void)
+{
+  GPIO_InitTypeDef GPIO_InitStructure;
+  RCC_AHB1PeriphClockCmd(VALVE_TIM3_GPIO_CLK, ENABLE);
+  GPIO_InitStructure.GPIO_Pin = VALVE_TIM3_GPIO_PIN;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_Init(VALVE_TIM3_GPIO_PORT, &GPIO_InitStructure);
+  GPIO_PinAFConfig(VALVE_TIM3_GPIO_PORT, VALVE_TIM3_GPIO_SOURCE, VALVE_TIM3_AF);
 }
 //-----------------------------------------------------------------------------|
 

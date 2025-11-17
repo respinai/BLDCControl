@@ -61,12 +61,14 @@ void  Set_PWM(uint16_t DataIn);
 void Timer_1_Initialize(void);
 void Timer_2_Initialize(void);
 void Timer_3_Initialize(void);
+void Timer_6_Initialize(void);
 void Timer_5_Initialize(void);
 void Timer_4_Initialize(void);
 void    ReachToTarget(void);
 void    ReachToTarget_Saffar(void);
 void  MoveBLDC(u8  Flg_state );
 void PWM_Timer1(u8  ChanneL ,u8 NewState);
+void SetPWM_TIM3_Valve(u16 PulsePercent);
 u16    Control(u16 SpeedSet,u32 SpeedMotor, float KP,float KI);
 u16    Control_Flow(u16 Setpoint,float Flow_Exh , float KP,float KI);
 //------------------------------------------------------------------------------
