@@ -15,8 +15,8 @@ extern        STRUCT_PACKET_PWM           PWM;
 extern        STRUCT_PACKET_PWM           PWMS;
 extern      UNION_HALLDATA_READ                     HallSensor;
 
-#define VALVE_PWM_TIMER_PRESCALER    83U    /* 84MHz / (83+1) = 1MHz */
-#define VALVE_PWM_TIMER_PERIOD       999U   /* 1MHz / (999+1) = 1kHz */
+#define VALVE_PWM_TIMER_PRESCALER    3U     /* 84MHz / (3+1) = 21MHz -> 20kHz with ARR=1049 */
+#define VALVE_PWM_TIMER_PERIOD       (Timer4_PulseWidth - 1U)   /* Matches EXH PWM (≈20kHz) */
 #define VALVE_PWM_TIMER_TICKS        (VALVE_PWM_TIMER_PERIOD + 1U)
 
 //-----------------------------------------------------------------------------|
