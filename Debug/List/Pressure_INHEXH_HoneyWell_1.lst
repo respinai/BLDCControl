@@ -1,0 +1,224 @@
+###############################################################################
+#
+# IAR ANSI C/C++ Compiler V7.40.3.8902/W32 for ARM        05/Nov/2025  15:02:25
+# Copyright 1999-2015 IAR Systems AB.
+#
+#    Cpu mode     =  thumb
+#    Endian       =  little
+#    Source file  =  
+#        D:\Turbo Fan\Codes\14030723 BLDC-valve2
+#        added\modules\Source\Pressure_INHEXH_HoneyWell_1.c
+#    Command line =  
+#        "D:\Turbo Fan\Codes\14030723 BLDC-valve2
+#        added\modules\Source\Pressure_INHEXH_HoneyWell_1.c" -D
+#        USE_STDPERIPH_DRIVER -D STM32F40XX -lC "D:\Turbo Fan\Codes\14030723
+#        BLDC-valve2 added\Debug\List\" -o "D:\Turbo Fan\Codes\14030723
+#        BLDC-valve2 added\Debug\Obj\" --no_cse --no_unroll --no_inline
+#        --no_code_motion --no_tbaa --no_clustering --no_scheduling --debug
+#        --endian=little --cpu=Cortex-M4 -e --fpu=VFPv4_sp --dlib_config
+#        "C:\Program Files (x86)\IAR Systems\Embedded Workbench
+#        7.2\arm\INC\c\DLib_Config_Normal.h" -I "D:\Turbo Fan\Codes\14030723
+#        BLDC-valve2 added\board\" -I "D:\Turbo Fan\Codes\14030723 BLDC-valve2
+#        added\app\" -I "D:\Turbo Fan\Codes\14030723 BLDC-valve2
+#        added\Libraries\CMSIS\Device\ST\STM32F4xx\Include\" -I "D:\Turbo
+#        Fan\Codes\14030723 BLDC-valve2
+#        added\Libraries\STM32F4xx_StdPeriph_Driver\inc\" -I "D:\Turbo
+#        Fan\Codes\14030723 BLDC-valve2 added\modules\Header\" -On
+#        --use_c++_inline -I "C:\Program Files (x86)\IAR Systems\Embedded
+#        Workbench 7.2\arm\CMSIS\Include\" --relaxed_fp
+#    List file    =  
+#        D:\Turbo Fan\Codes\14030723 BLDC-valve2
+#        added\Debug\List\Pressure_INHEXH_HoneyWell_1.lst
+#    Object file  =  
+#        D:\Turbo Fan\Codes\14030723 BLDC-valve2
+#        added\Debug\Obj\Pressure_INHEXH_HoneyWell_1.o
+#
+###############################################################################
+
+D:\Turbo Fan\Codes\14030723 BLDC-valve2 added\modules\Source\Pressure_INHEXH_HoneyWell_1.c
+      1          //------------------------------------------------------------------------------
+      2          // SAADAT Co 
+      3          // VENTILATOR 
+      4          // DEVELOPER : MOJTABA REZAEI 
+      5          // VER 1.0
+      6          // 
+      7          /*
+      8          |------------------------------------------------------------------------------|
+      9          |     		***		Include		***														   |
+     10          |------------------------------------------------------------------------------|
+     11          */
+     12          #include "Pressure_INHEXH_HoneyWell.h"
+     13          #include "main.h"
+     14          /*
+     15          |------------------------------------------------------------------------------|
+     16          |			***		Defines		***														   |
+     17          |------------------------------------------------------------------------------|
+     18          */
+     19          extern  STRUCT_DATA_A2DSENSORS          DATA_Sensors;
+     20          
+     21          /*
+     22          |------------------------------------------------------------------------------|
+     23          |                 ***		Fanctions 		***												   |
+     24          |------------------------------------------------------------------------------|
+     25          */
+     26          //-----------------------------------------------------------------------------|
+
+   \                                 In section .text, align 2, keep-with-next
+     27          void Pressure_AllSensors_INITIALIZE(void)
+     28          {
+     29            return;
+   \                     Pressure_AllSensors_INITIALIZE: (+1)
+   \   00000000   0x4770             BX       LR               ;; return
+     30          }
+     31          //-----------------------------------------------------------------------------|
+
+   \                                 In section .text, align 4, keep-with-next
+     32          void Read_Press_INH_EXH(void) /* HoneyWell */ //  Call Every 2.5 ms
+     33          {
+   \                     Read_Press_INH_EXH: (+1)
+   \   00000000   0xB580             PUSH     {R7,LR}
+   \   00000002   0xED2D 0x8B02      VPUSH    {D8}
+     34            //static    u8    State_Process = 0;
+     35            float     Temp_Press;
+     36            //...................
+     37            
+     38            Temp_Press = (SPI_I2S_ReceiveData(PRESS_INH) & 0x3FFF); //=> Delet Status Bits [31:30]
+   \   00000006   0x....             LDR.N    R0,??DataTable0_5  ;; 0x40003800
+   \   00000008   0x.... 0x....      BL       SPI_I2S_ReceiveData
+   \   0000000C   0x0480             LSLS     R0,R0,#+18       ;; ZeroExtS R0,R0,#+18,#+18
+   \   0000000E   0x0C80             LSRS     R0,R0,#+18
+   \   00000010   0xEE00 0x0A10      VMOV     S0,R0
+   \   00000014   0xEEB8 0x0AC0      VCVT.F32.S32 S0,S0
+   \   00000018   0xEEB0 0x8A40      VMOV.F32 S16,S0
+     39            Temp_Press = (((Temp_Press - P_INHEXH_OUTPUTMIN)*(INHEXH_Pressure_MAX - INHEXH_Pressure_MIN))/(P_INHEXH_OUTPUTMAX - P_INHEXH_OUTPUTMIN)) + INHEXH_Pressure_MIN ;
+   \   0000001C   0xED9F 0x....      VLDR.W   S0,??DataTable0  ;; 0xc4ccc000
+   \   00000020   0xEE38 0x0A00      VADD.F32 S0,S16,S0
+   \   00000024   0xEDDF 0x....      VLDR.W   S1,??DataTable0_1  ;; 0x43a00000
+   \   00000028   0xEE20 0x0A20      VMUL.F32 S0,S0,S1
+   \   0000002C   0xEDDF 0x....      VLDR.W   S1,??DataTable0_2  ;; 0x464ccc00
+   \   00000030   0xEE80 0x0A20      VDIV.F32 S0,S0,S1
+   \   00000034   0xEDDF 0x....      VLDR.W   S1,??DataTable0_3  ;; 0xc3200000
+   \   00000038   0xEE30 0x8A20      VADD.F32 S16,S0,S1
+     40            /*  Temp_Press = ((   Pout    - OSdig) / 2^14 ) * 150  */
+     41            DATA_Sensors.Press_INH = (s16)(Temp_Press * 100 * 1.019716); /* 100=>2Decimal Place & 1.0197162 =>>Convert mbar TO cmH2O */     
+   \   0000003C   0xED9F 0x....      VLDR.W   S0,??DataTable0_4  ;; 0x42c80000
+   \   00000040   0xEE28 0x0A00      VMUL.F32 S0,S16,S0
+   \   00000044   0xEE10 0x0A10      VMOV     R0,S0
+   \   00000048   0x.... 0x....      BL       __aeabi_f2d
+   \   0000004C   0x....             LDR.N    R2,??DataTable0_6  ;; 0xb97353b5
+   \   0000004E   0x....             LDR.N    R3,??DataTable0_7  ;; 0x3ff050c1
+   \   00000050   0x.... 0x....      BL       __aeabi_dmul
+   \   00000054   0x.... 0x....      BL       __aeabi_d2iz
+   \   00000058   0x....             LDR.N    R1,??DataTable0_8
+   \   0000005A   0x8008             STRH     R0,[R1, #+0]
+     42            GPIO_SetBits(PRESSINHCS_PORT , PRESSINHCS_PIN);        // CS High
+   \   0000005C   0xF44F 0x5180      MOV      R1,#+4096
+   \   00000060   0x....             LDR.N    R0,??DataTable0_9  ;; 0x40020400
+   \   00000062   0x.... 0x....      BL       GPIO_SetBits
+     43            //---------------------------------------------------
+     44            SPI_I2S_ITConfig(PRESS_INH , SPI_IT_RXNE , DISABLE );
+   \   00000066   0x2200             MOVS     R2,#+0
+   \   00000068   0x2160             MOVS     R1,#+96
+   \   0000006A   0x....             LDR.N    R0,??DataTable0_5  ;; 0x40003800
+   \   0000006C   0x.... 0x....      BL       SPI_I2S_ITConfig
+     45            
+     46          //    
+     47          //  switch(State_Process)
+     48          //  {
+     49          //   case 0://=====>> Start Read Pressure INH
+     50          //    
+     51          //    State_Process = 1; // Goto Calculate Pressure INH
+     52          //    break; 
+     53          //   case 1 ://=====>> Calculate Pressure INH
+     54          //   
+     55          //    State_Process = 0; // Return to Start Process 
+     56          //    break; 
+     57          //  }
+     58          }
+   \   00000070   0xECBD 0x8B02      VPOP     {D8}
+   \   00000074   0xBD01             POP      {R0,PC}          ;; return
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable0:
+   \   00000000   0xC4CCC000         DC32     0xc4ccc000
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable0_1:
+   \   00000000   0x43A00000         DC32     0x43a00000
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable0_2:
+   \   00000000   0x464CCC00         DC32     0x464ccc00
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable0_3:
+   \   00000000   0xC3200000         DC32     0xc3200000
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable0_4:
+   \   00000000   0x42C80000         DC32     0x42c80000
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable0_5:
+   \   00000000   0x40003800         DC32     0x40003800
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable0_6:
+   \   00000000   0xB97353B5         DC32     0xb97353b5
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable0_7:
+   \   00000000   0x3FF050C1         DC32     0x3ff050c1
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable0_8:
+   \   00000000   0x........         DC32     DATA_Sensors
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable0_9:
+   \   00000000   0x40020400         DC32     0x40020400
+     59          /*
+     60          |------------------------------------------------------------------------------|
+     61          |                             ***         ***															   |
+     62          |------------------------------------------------------------------------------|
+     63          */
+     64          
+
+   Maximum stack usage in bytes:
+
+   .cstack Function
+   ------- --------
+       0   Pressure_AllSensors_INITIALIZE
+      16   Read_Press_INH_EXH
+        16   -> GPIO_SetBits
+        16   -> SPI_I2S_ITConfig
+        16   -> SPI_I2S_ReceiveData
+        16   -> __aeabi_d2iz
+        16   -> __aeabi_dmul
+        16   -> __aeabi_f2d
+
+
+   Section sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+       4  ??DataTable0
+       4  ??DataTable0_1
+       4  ??DataTable0_2
+       4  ??DataTable0_3
+       4  ??DataTable0_4
+       4  ??DataTable0_5
+       4  ??DataTable0_6
+       4  ??DataTable0_7
+       4  ??DataTable0_8
+       4  ??DataTable0_9
+       2  Pressure_AllSensors_INITIALIZE
+     118  Read_Press_INH_EXH
+
+ 
+ 160 bytes in section .text
+ 
+ 160 bytes of CODE memory
+
+Errors: none
+Warnings: none

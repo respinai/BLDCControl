@@ -1,0 +1,649 @@
+###############################################################################
+#
+# IAR ANSI C/C++ Compiler V7.40.3.8902/W32 for ARM        16/Aug/2021  09:05:08
+# Copyright 1999-2015 IAR Systems AB.
+#
+#    Cpu mode     =  thumb
+#    Endian       =  little
+#    Source file  =  
+#        E:\Ventilator\SoftWare\BLDC\BLDC_4000525\modules\Source\Flow_INH_TSI.c
+#    Command line =  
+#        E:\Ventilator\SoftWare\BLDC\BLDC_4000525\modules\Source\Flow_INH_TSI.c
+#        -D USE_STDPERIPH_DRIVER -D STM32F40XX -D INH_FLOW_SENSIRION -lC
+#        E:\Ventilator\SoftWare\BLDC\BLDC_4000525\Debug\List\ -o
+#        E:\Ventilator\SoftWare\BLDC\BLDC_4000525\Debug\Obj\ --no_cse
+#        --no_unroll --no_inline --no_code_motion --no_tbaa --no_clustering
+#        --no_scheduling --debug --endian=little --cpu=Cortex-M4 -e
+#        --fpu=VFPv4_sp --dlib_config "C:\Program Files (x86)\IAR
+#        Systems\Embedded Workbench 7.2\arm\INC\c\DLib_Config_Normal.h" -I
+#        E:\Ventilator\SoftWare\BLDC\BLDC_4000525\board\ -I
+#        E:\Ventilator\SoftWare\BLDC\BLDC_4000525\app\ -I
+#        E:\Ventilator\SoftWare\BLDC\BLDC_4000525\Libraries\CMSIS\Device\ST\STM32F4xx\Include\
+#        -I
+#        E:\Ventilator\SoftWare\BLDC\BLDC_4000525\Libraries\STM32F4xx_StdPeriph_Driver\inc\
+#        -I E:\Ventilator\SoftWare\BLDC\BLDC_4000525\modules\Header\ -On
+#        --use_c++_inline -I "C:\Program Files (x86)\IAR Systems\Embedded
+#        Workbench 7.2\arm\CMSIS\Include\" --relaxed_fp
+#    List file    =  
+#        E:\Ventilator\SoftWare\BLDC\BLDC_4000525\Debug\List\Flow_INH_TSI.lst
+#    Object file  =  
+#        E:\Ventilator\SoftWare\BLDC\BLDC_4000525\Debug\Obj\Flow_INH_TSI.o
+#
+###############################################################################
+
+E:\Ventilator\SoftWare\BLDC\BLDC_4000525\modules\Source\Flow_INH_TSI.c
+      1          //-----------------------------------------------------------------------------|
+      2          // SAADAT Co 
+      3          // VENTILATOR 
+      4          // DEVELOPER : MOJTABA REZAEI ASHTIYANI
+      5          // VER 1.0
+      6          // This File contains the Set up the flow sensor SENSIRION company which contains :
+      7          // __the coefficients read from memory with I2C communication.
+      8          // __reading the analog value is output.
+      9          //-----------------------------------------------------------------------------|
+     10          #ifdef INH_FLOW_TSI
+     11          //-------------------
+     12          #include "Flow_Sensirion_INH.h"
+     13          #include "Flow_TSI_1.h"
+     14          //--------------------------------------
+     15          extern          STRUCT_DATA_A2DSENSORS                  DATA_Sensors;
+     16          extern 	        Struct_ADCExt_Data                      VA2dExt_Data; 
+     17          
+     18          //--------------------------------------
+     19          extern          u16  PWM_Table ,target_output;
+     20          //--------------------------
+     21          Struct_FlowSensor_EEPROM_Table      TSI_FlowROM[AIRO2];
+     22          //--------------------------------------
+     23          UNION_Sensirion_ROM_data            Sensirion_FlowROM[AIRO2];    
+     24          //-------------------------------------------------------------------------
+     25          u16     TM_I2C_Timeout;
+     26          
+     27          u8      ADD_EErom = 0, BYTE_rom = 0, index1 = 0 , En_ADD = 0;
+     28          //----------------------------------------------------
+     29          /* Private defines */
+     30          #define I2C_TRANSMITTER_MODE   0
+     31          #define I2C_RECEIVER_MODE      1
+     32          #define I2C_ACK_ENABLE         1
+     33          #define I2C_ACK_DISABLE        0
+     34          #ifndef I2C_TIMEOUT
+     35          #define I2C_TIMEOUT          30000
+     36          #endif
+     37          
+     38          //---
+     39          I2C_StatusTypeDefINH    I2C_Receive_INH(I2C_TypeDef* I2Cx, u8 address,u8* data, u16 count);
+     40          I2C_StatusTypeDefINH    I2C_Transmit_INH(I2C_TypeDef* I2Cx ,u8 address ,u8 data);
+     41          
+     42          ///---
+     43          //----------------------------------------------------------------------------------
+     44          u16 	Vf[2], Vt[2];
+     45          float fVf[2], fVt[2];
+     46          
+     47          //---------------------------------------------------------------------------------
+     48          const u8 Flow_E2Prom_ADD[Flow_E2Prom_ADD_Len]=
+     49          {
+     50              /*Address ,   Bytes	      */
+     51              0		,	2,	//    CRC
+     52              2		,	6,	//	SN
+     53              8		,	4,	//	MN
+     54              12	        ,	1,	//	Rev
+     55              14	        ,	2,	//	Year
+     56              16	        ,	1,	//	Month
+     57              18	        ,	1,	//	Day
+     58              20	        ,	4,	//	Tcal
+     59              24	        ,	4,	//	S
+     60              28	        ,	4,	//	Z	
+     61              32	        ,	4,	//	S2
+     62              36	        ,	4,	//	Z2
+     63              40	        ,	4,	//	Tcorr
+     64              
+     65              44	        ,	1,	//	Cal Air
+     66              46	        ,	2,	//	Location Air
+     67              48	        ,	1,	//	Cal Oxygen (2A)
+     68              50          ,	2,	//	Location	Oxygen
+     69              52	        ,	1,	//	Cal	Heliox
+     70              54	        ,	2,	//	Location Heliox
+     71              56	        ,	1,	//	Cal Gas4	
+     72              58	        ,	2,	//	Location	Gac4
+     73              
+     74              0		,	1,	//	offset (33)
+     75              2		,	4,	//	K0			
+     76              6		,	4,	//	K1			
+     77              10	        ,	4,	//	K2			
+     78              14	        ,	4,	//	K3
+     79              18	        ,	4,	//	L0			
+     80              22	        ,	4,	//	L1			
+     81              26	        ,	4,	//	L2			
+     82              30	        ,	4,	//	L3			
+     83              
+     84              34	        ,	16,	//	VABC[0]
+     85              50	        ,	16,	//	VABC[1]
+     86              66	        ,	16,	//	VABC[2]
+     87              82	        ,	16,	//	VABC[3]
+     88              98	        ,	16,	//	VABC[4]
+     89              114	        ,	16,	//	VABC[5]
+     90              130	        ,	16,	//	VABC[6]
+     91              146	        ,	16,	//	VABC[7]
+     92              162	        ,	16,	//	VABC[8]
+     93              178	        ,	16,	//	VABC[9]
+     94              194	        ,	16,	//	VABC[10]
+     95              210	        ,	16,	//	VABC[11]
+     96              226	        ,	16,	//	VABC[12]
+     97          };
+     98          //-------------------------------------------------------------------------------
+     99          const u16 TempTable[90] = {
+    100              /*-20 ~ -11 */  22923,22804,22681,22552,22417,22277,22131,21979,21821,21658,
+    101              /*-10 ~  -1 */  21488,21312,21130,20942,20748,20548,20342,20129,19911,19687,
+    102              /*  0 ~   9 */  19457,19222,18981,18734,18483,18226,17934,17700,17430,17156,
+    103              /* 10 ~  19 */  16879,16598,16315,16028,15739,15448,15156,14861,14566,14270,
+    104              /* 20 ~  29 */  13974,13678,13382,13087,12793,12500,12209,11920,11633,11348,
+    105              /* 30 ~  39 */  11066,10788,10512,10240, 9972, 9708, 9447, 9191, 8939, 8692,
+    106              /* 40 ~  49 */   8449, 8211, 7977, 7749, 7525, 7306, 7092, 6883, 6679, 6480,
+    107              /* 50 ~  59 */   6286, 6097, 5913, 5733, 5558, 5388, 5223, 5062, 4906, 4754,
+    108              /* 60 ~  69 */   4607, 4464, 4325, 4190, 4060, 3933, 3810, 3691, 3576, 3464
+    109          }; // VOLT * 10000 
+    110          
+    111          ///F= -8.0295*X^5 + 53.128*X^4 - 144.94*X^3 + 205.1*X^2 - 185.02*X+ 113.71
+    112          //----------------------------------------------------------------------------------
+    113          //--------------------------------------------
+    114          void Flow_INH_Service(u8 type)
+    115          {
+    116              if(type == AIR)
+    117              {
+    118                  Vf[AIR] = VA2dExt_Data.AirVf;
+    119                  Vt[AIR] = VA2dExt_Data.AirVt;
+    120                  fVf[AIR] = ((float) (((u32) (VA2dExt_Data.AirVf * A2DEXT_VREFmv)) / A2DEXT_MAXVAL)) / 1000;//Convert mVolt TO Volt
+    121                  fVt[AIR] = ((float) (((u32) (VA2dExt_Data.AirVt * A2DEXT_VREFmv)) / A2DEXT_MAXVAL)) / 1000;
+    122                  DATA_Sensors.Flow_AIR = (u16)(flow_calculation(AIR)*100 );
+    123                  
+    124              }
+    125              else if(type == O2)
+    126              {
+    127                  Vf[O2]  = VA2dExt_Data.O2Vf;
+    128                  Vt[O2]  = VA2dExt_Data.O2Vt;
+    129                  fVf[O2]  = ((float) (((u32) (VA2dExt_Data.O2Vf  * A2DEXT_VREFmv)) / A2DEXT_MAXVAL)) / 1000;
+    130                  fVt[O2]  = ((float) (((u32) (VA2dExt_Data.O2Vt  * A2DEXT_VREFmv)) / A2DEXT_MAXVAL)) / 1000;
+    131                  DATA_Sensors.Flow_O2 = (u16)(flow_calculation(O2)*100 );
+    132              }
+    133          }
+    134          /*************************** flow Service *********************************/
+    135          float flow_calculation (u8 type)
+    136          {
+    137              float T_temp, T_over, V_fStd,Q,K,PressAmIn; 
+    138              u8 i = 0;
+    139              
+    140              //----Step 4
+    141              T_temp = TSI_FlowROM[type].Data.Tcorr + temp_Convert(Vt[type]);
+    142              if(type == AIR) 
+    143                 DATA_Sensors.Temp_Gas_Air = (s16)(T_temp * 10);
+    144              else if(type == O2)
+    145              DATA_Sensors.Temp_Gas_O2 = (s16)(T_temp * 10);
+    146              //----Step 5	
+    147              if(T_temp >= TEMP_REF)// Use K coefficient if T >= 21.11
+    148              {
+    149                  T_over = (TSI_FlowROM[type].Data.K0 +(TSI_FlowROM[type].Data.K1 * T_temp)+(TSI_FlowROM[type].Data.K2 * (float)(pow(T_temp,2)))+(TSI_FlowROM[type].Data.K3 * (float)(pow(T_temp,3))));
+    150              }
+    151              else // Use L coefficient
+    152              {
+    153                  T_over = (TSI_FlowROM[type].Data.L0 +(TSI_FlowROM[type].Data.L1 * T_temp)+(TSI_FlowROM[type].Data.L2 * (float)(pow(T_temp,2)))+(TSI_FlowROM[type].Data.L3 * (float)(pow(T_temp,3))));
+    154              }
+    155              //----Step 6
+    156              V_fStd = ((fVf[type] + TSI_FlowROM[type].Data.Z)*((float)(sqrt((T_over - TEMP_REF)/(T_over - T_temp))))) - TSI_FlowROM[type].Data.Z;
+    157              //----Step 7	
+    158              while((V_fStd > TSI_FlowROM[type].Data.Coeff[i].V)&&(i < TSI_FlowROM[type].Data.CoeffNUM ))
+    159              {
+    160                  i++;
+    161              }
+    162              if(i)
+    163                  i --;	
+    164              //----Step 8	
+    165              Q = TSI_FlowROM[type].Data.Coeff[i].A +(TSI_FlowROM[type].Data.Coeff[i].B * (float)(pow(V_fStd , 2)))+(TSI_FlowROM[type].Data.Coeff[i].C * (float)(pow(V_fStd , 5)));
+    166              
+    167              PressAmIn = ((float)DATA_Sensors.A2D_AmbientPressure / 10) + ((float)DATA_Sensors.Press_INH / 100 );
+    168              K = ( PFixCOEFFICIENT1 / (PressAmIn - 64.0) ) * PFixCOEFFICIENT2;
+    169          
+    170              Q *= K;  //  convert STPD TO BTPS
+    171              if(Q < 0)
+    172                  Q = 0;
+    173              return Q ;
+    174          }
+    175          //-------------------------------------------------------------------------------
+    176          float temp_Convert(u16 Val)
+    177          {
+    178              s8          i;
+    179              u16         Vt,tmp;
+    180              float       Temp;
+    181              static  u8  TempTableState;
+    182              //	// -8.0295*F49^5 + 53.128*F49^4 - 144.94*F49^3 + 205.1*F49^2 - 185.02*F49+ 113.71
+    183              //	Temp = ((-8.0295 * pow(Vt,5))+(53.128*pow(Vt,4))-(144.94*pow(Vt,3))+(205.1*pow(Vt,2))-(185.02* Vt)+(113.71));
+    184              Vt = (u16) (((u32) Val * A2DEXT_VREFmv * 10) / A2DEXT_MAXVAL);
+    185              //                 28753
+    186              if(Vt <= TempTable[89])
+    187              {
+    188                  Temp = 70.00;
+    189              }
+    190              else if(Vt < TempTable[0]) // 22923,3464
+    191              {
+    192                  TempTableState = (u8)(Vt / 1000);
+    193                  switch(TempTableState)
+    194                  {
+    195                  case 22:
+    196                      i = -20;
+    197                      break;
+    198                  case 21:
+    199                      i = -13;
+    200                      break;
+    201                  case 20:
+    202                      i = -7;
+    203                      break;
+    204                  case 19:
+    205                      i = -2;
+    206                      break;
+    207                  case 18:
+    208                      i = 2;
+    209                      break;
+    210                  case 17:
+    211                      i = 6;
+    212                      break;
+    213                  case 16:
+    214                      i = 10;
+    215                      break;
+    216                  case 15:
+    217                      i = 14;
+    218                      break;
+    219                  case 14:
+    220                      i = 17;
+    221                      break;
+    222                  case 13:
+    223                      i = 20;
+    224                      break;
+    225                  case 12:
+    226                      i = 24;
+    227                      break;
+    228                  case 11:
+    229                      i = 27;
+    230                      break;
+    231                  case 10:
+    232                      i = 31;
+    233                      break;
+    234                  case 9:
+    235                      i = 34;
+    236                      break;
+    237                  case 8:
+    238                      i = 38;
+    239                      break;
+    240                  case 7:      
+    241                      i = 42;
+    242                      break;
+    243                  case 6:
+    244                      i = 47;
+    245                      break;
+    246                  case 5:
+    247                      i = 52;
+    248                      break;
+    249                  case 4:
+    250                      i = 58;
+    251                      break;
+    252                  case 3:
+    253                      i = 65;
+    254                      break;      
+    255                  }
+    256                  //
+    257                  while ((i < 70) & (Vt < TempTable[i+20]))  // i will be -20~70
+    258                  {
+    259                      i++;
+    260                  }   
+    261                  i --;  // i is the integer part of TEMP 			
+    262                  tmp = ((TempTable[i+20] - Vt)*100) / (TempTable[i+20] - TempTable[i+21]); // rational part 
+    263                  Temp = (float) tmp / 100;
+    264                  Temp += i;	
+    265              }
+    266              //--------------------------------------
+    267              else
+    268              {
+    269                  Temp = -20.00;
+    270              }
+    271              return Temp;
+    272          }
+    273          //----------------------------------------------------------------------------------
+    274          void Flow_INH_ReadCoeff (I2C_TypeDef* I2Cx)
+    275          {
+    276            u32       Dl = 0;
+    277            u8	  	ReadData[SENSIRION_BUFFREADING_ROM_LEN] = {0};
+    278            
+    279            u8		TypeAirO2 = 0,SensorType = 0,CNTErr=0;
+    280            //--
+    281            u16       Index_CNT = 0;
+    282            u16       TmepData = 0;
+    283            u8		*ptr_eeprom;
+    284            u16       Len_ReadBuff = SENSIRION_BUFFREADING_ROM_LEN;
+    285            I2C_StatusTypeDefINH   StatusFu = I2C__Emty;
+    286            //----
+    287            
+    288            if(I2Cx == FLOWSENSOR_AIR )
+    289              TypeAirO2 = AIR;
+    290            else
+    291              TypeAirO2 = O2;
+    292            
+    293            ptr_eeprom = (u8*)&TSI_FlowROM[TypeAirO2].Data;
+    294            
+    295            //---
+    296            do
+    297            {
+    298              StatusFu = I2C_Transmit_INH( I2Cx, 0xA0, 0 );
+    299              if(StatusFu != I2C__OK)
+    300              {
+    301                for(Dl=0;Dl<50000;Dl++){};
+    302                StatusFu = I2C_Transmit_INH( I2Cx, 0xA0, 0 );
+    303              }
+    304              
+    305              StatusFu = I2C_Receive_INH ( I2Cx, 0xA1, ReadData, SENSIRION_BUFFREADING_ROM_LEN); 
+    306              SensorType = INH_SensorDetection(ReadData);
+    307              CNTErr++;
+    308            }while((SensorType == INHSENSOR_ERROR)&&(CNTErr < 5));
+    309            //-----------------------
+    310            if(SensorType == TSI_INHSENSOR)
+    311            {
+    312              while(Len_ReadBuff)  
+    313              {
+    314                TmepData = ReadData[Index_CNT++];
+    315                /* Calculation CRC */			
+    316                
+    317                if(((Flow_E2Prom_ADD[TSI_FlowROM[TypeAirO2].Control.Index ] + TSI_FlowROM[TypeAirO2].Control.Offset) == TSI_FlowROM[TypeAirO2].Control.cnt) || (TSI_FlowROM[TypeAirO2].Control.Flg_loop == TRUE))
+    318                {
+    319                  if(!TSI_FlowROM[TypeAirO2].Control.Flg_loop)
+    320                  {
+    321                    TSI_FlowROM[TypeAirO2].Control.Flg_loop = TRUE;
+    322                    TSI_FlowROM[TypeAirO2].Control.Index++;
+    323                    TSI_FlowROM[TypeAirO2].Control.Len = Flow_E2Prom_ADD[TSI_FlowROM[TypeAirO2].Control.Index];
+    324                    TSI_FlowROM[TypeAirO2].Control.Len_cpy = TSI_FlowROM[TypeAirO2].Control.Len;
+    325                  }
+    326                  *(ptr_eeprom + TSI_FlowROM[TypeAirO2].Control.Len - 1) = TmepData;
+    327                  //CRC_Calculation(TmepData);
+    328                  TSI_FlowROM[TypeAirO2].Control.Len--;
+    329                  if(TSI_FlowROM[TypeAirO2].Control.Len == 0)
+    330                  {
+    331                    TSI_FlowROM[TypeAirO2].Control.Flg_loop =FALSE;
+    332                    TSI_FlowROM[TypeAirO2].Control.Index++;
+    333                    ptr_eeprom += TSI_FlowROM[TypeAirO2].Control.Len_cpy;
+    334                  }
+    335                }	
+    336                TSI_FlowROM[TypeAirO2].Control.cnt ++;
+    337                if(TSI_FlowROM[TypeAirO2].Control.cnt == CHECK_ADD)
+    338                {
+    339                  if(TSI_FlowROM[TypeAirO2].Data.CalAIR == 0x01)
+    340                  {
+    341                    TSI_FlowROM[TypeAirO2].Control.Offset = TSI_FlowROM[TypeAirO2].Data.LocationAIR;
+    342                  }
+    343                  else if(TSI_FlowROM[TypeAirO2].Data.CalO2 == 0x01)
+    344                  {
+    345                    TSI_FlowROM[TypeAirO2].Control.Offset = TSI_FlowROM[TypeAirO2].Data.LocationO2;
+    346                  }
+    347                  else if(TSI_FlowROM[TypeAirO2].Data.CalHLX == 0x01)
+    348                  {
+    349                    TSI_FlowROM[TypeAirO2].Control.Offset = TSI_FlowROM[TypeAirO2].Data.LocationHLX;
+    350                  }
+    351                  else if(TSI_FlowROM[TypeAirO2].Data.CalGAS == 0x01)
+    352                  {
+    353                    TSI_FlowROM[TypeAirO2].Control.Offset = TSI_FlowROM[TypeAirO2].Data.LocationGAS;
+    354                  }
+    355                  else
+    356                  {
+    357                    // Error & SET  coefficiont
+    358                  }
+    359                }    
+    360                
+    361                Len_ReadBuff--; //  
+    362                
+    363              } // While
+    364              
+    365              if( TypeAirO2 == AIR)
+    366              {
+    367                  DATA_Sensors.Air_TSISN[0]=TSI_FlowROM[AIR].Data.SN[0];
+    368                  DATA_Sensors.Air_TSISN[1]=TSI_FlowROM[AIR].Data.SN[1];
+    369                  DATA_Sensors.Air_TSISN[2]=TSI_FlowROM[AIR].Data.SN[2];
+    370                  DATA_Sensors.Air_TSISN[3]=TSI_FlowROM[AIR].Data.SN[3];
+    371                  DATA_Sensors.Air_TSISN[4]=TSI_FlowROM[AIR].Data.SN[4];
+    372                  DATA_Sensors.Air_TSISN[5]=TSI_FlowROM[AIR].Data.SN[5]; 
+    373                  
+    374                  if(TSI_FlowROM[TypeAirO2].Data.MN == 840521)
+    375                    DATA_Sensors.HWErr.TSIASSEMAIR = FALSE; 
+    376                  else
+    377                    DATA_Sensors.HWErr.TSIASSEMAIR = TRUE; 
+    378              }
+    379              else if( TypeAirO2 == O2)
+    380              {
+    381                  DATA_Sensors.O2_TSISN[0]=TSI_FlowROM[O2].Data.SN[0];
+    382                  DATA_Sensors.O2_TSISN[1]=TSI_FlowROM[O2].Data.SN[1];
+    383                  DATA_Sensors.O2_TSISN[2]=TSI_FlowROM[O2].Data.SN[2];
+    384                  DATA_Sensors.O2_TSISN[3]=TSI_FlowROM[O2].Data.SN[3];
+    385                  DATA_Sensors.O2_TSISN[4]=TSI_FlowROM[O2].Data.SN[4];
+    386                  DATA_Sensors.O2_TSISN[5]=TSI_FlowROM[O2].Data.SN[5]; 
+    387                  
+    388                  if(TSI_FlowROM[TypeAirO2].Data.MN == 840522)
+    389                    DATA_Sensors.HWErr.TSIASSEMO2 = FALSE;
+    390                  else
+    391                    DATA_Sensors.HWErr.TSIASSEMO2 = TRUE; 
+    392              }
+    393            }
+    394            //-------------------------------------
+    395            else
+    396            {
+    397              if(TypeAirO2 == AIR)
+    398              {
+    399                DATA_Sensors.HWErr.TSIROMAIR = TRUE;
+    400              }
+    401              if( TypeAirO2 == O2)
+    402              {
+    403                DATA_Sensors.HWErr.TSIROMO2 = TRUE;
+    404              }
+    405              //Err
+    406            }
+    407            
+    408          }
+    409          
+    410          //---------------------------------------------
+    411          u8  INH_SensorDetection(u8* ReadDatA)
+    412          {
+    413            u8    INH_TypeT = INHSENSOR_ERROR;
+    414            union MD_
+    415            {
+    416              u8  DataROM[4];
+    417              u32 AllDataROM;
+    418            };
+    419            union MD_ MD_Sensor;
+    420            //------
+    421            MD_Sensor.DataROM[3] = ReadDatA[8];// 
+    422            MD_Sensor.DataROM[2] = ReadDatA[9];        
+    423            MD_Sensor.DataROM[1] = ReadDatA[10];
+    424            MD_Sensor.DataROM[0] = ReadDatA[11];        
+    425            
+    426            if((MD_Sensor.AllDataROM == 840521)||(MD_Sensor.AllDataROM == 840522))
+    427              INH_TypeT = TSI_INHSENSOR; //TSI
+    428              //------
+    429              return INH_TypeT;
+    430          }
+    431          
+    432          
+    433          
+    434          /*************************** flow Service TSI *********************************/
+    435          
+    436          //-------------------------------------------------------------------------------
+    437          
+    438          
+    439          /*************************** temp Convert **************************************/
+    440          u32 I2C__Timeout;
+    441          //----------------------------------------------------
+    442          I2C_StatusTypeDefINH    I2C_Receive_INH(I2C_TypeDef* I2Cx, u8 address,u8* data, u16 count) 
+    443          {
+    444            I2C__Timeout = I2C_TIMEOUT;
+    445            /* Wait until BUSY flag is reset */
+    446            while(I2Cx->SR2 & I2C_SR2_BUSY)
+    447            {
+    448              if(--I2C__Timeout == 0x00)
+    449              {
+    450                /* Generate Stop */
+    451                I2Cx->CR1 |= I2C_CR1_STOP;
+    452                return I2C__TIMEout;  
+    453              }
+    454            }
+    455            //--------------------
+    456            /* Enable Acknowledge */
+    457            I2Cx->CR1 |= I2C_CR1_ACK;   
+    458            //------------
+    459            /* Generate Start */
+    460            I2Cx->CR1 |= I2C_CR1_START; 
+    461            /* Wait until SB flag is set */
+    462            I2C__Timeout = I2C_TIMEOUT;
+    463            while(!(I2Cx->SR1 & I2C_SR1_SB)) 
+    464            {
+    465              if (--I2C__Timeout == 0x00) 
+    466              {
+    467                /* Generate Stop */
+    468                I2Cx->CR1 |= I2C_CR1_STOP;
+    469                return I2C__TIMEout;
+    470              }      
+    471            }
+    472            ///-------- 
+    473            /* Send address with zero last bit */
+    474            I2Cx->DR = address;   
+    475            /* Wait till finished */
+    476            while (!(I2Cx->SR1 & I2C_SR1_ADDR)) 
+    477            {
+    478              if (--I2C__Timeout == 0x00) 
+    479              {
+    480                /* Generate Stop */
+    481                I2Cx->CR1 |= I2C_CR1_STOP;
+    482                return I2C__TIMEout;
+    483              } 
+    484            }
+    485            /* Read status register to clear ADDR flag */
+    486            I2Cx->SR1;
+    487            I2Cx->SR2;
+    488            //----------------------
+    489            
+    490            
+    491            for(;count>0;count--)
+    492            {
+    493              if(count == 1)//end data
+    494              {
+    495                I2Cx->CR1 &= ~I2C_CR1_ACK;
+    496              }
+    497              
+    498              /* Wait till not received */
+    499              I2C__Timeout = I2C_TIMEOUT;
+    500              while (!I2C_CheckEvent(I2Cx, I2C_EVENT_MASTER_BYTE_RECEIVED)) 
+    501              {
+    502                if (--I2C__Timeout == 0x00) 
+    503                {
+    504                  /* Generate Stop */
+    505                  I2Cx->CR1 |= I2C_CR1_STOP;
+    506                  return I2C__TIMEout;
+    507                }
+    508              }    
+    509              /* Read data */
+    510              *data = I2Cx->DR;  
+    511              data++;
+    512            }
+    513            /* Generate Stop */
+    514            I2Cx->CR1 |= I2C_CR1_STOP;
+    515            /* Read status register to clear ADDR flag */
+    516            I2Cx->SR1;
+    517            I2Cx->SR2;
+    518            //-----------------
+    519            return I2C__OK;  
+    520          }
+    521          
+    522          //--------------------------------------------
+    523          I2C_StatusTypeDefINH    I2C_Transmit_INH(I2C_TypeDef* I2Cx ,u8 address ,u8 data) 
+    524          {
+    525            I2C__Timeout = I2C_TIMEOUT;
+    526            /* Wait until BUSY flag is reset */
+    527            while(I2Cx->SR2 & I2C_SR2_BUSY)
+    528            {
+    529              if(--I2C__Timeout == 0x00)
+    530              {
+    531                /* Generate Stop */
+    532                I2Cx->CR1 |= I2C_CR1_STOP;
+    533                return I2C__TIMEout;  
+    534              }
+    535            }
+    536            //--------------------
+    537            /* Generate Start */
+    538            I2Cx->CR1 |= I2C_CR1_START; 
+    539            /* Wait until SB flag is set */
+    540            I2C__Timeout = I2C_TIMEOUT;
+    541            while(!(I2Cx->SR1 & I2C_SR1_SB)) 
+    542            {
+    543              if (--I2C__Timeout == 0x00) 
+    544              {
+    545                /* Generate Stop */
+    546                I2Cx->CR1 |= I2C_CR1_STOP;
+    547                return I2C__TIMEout;
+    548              }      
+    549            }
+    550            //--------------------
+    551            I2C__Timeout = I2C_TIMEOUT;
+    552            /* Send address with zero last bit */
+    553            I2Cx->DR = address;   // address & write Bit
+    554            /* Wait till finished */
+    555            while (!(I2Cx->SR1 & I2C_SR1_ADDR)) 
+    556            {
+    557              if (--I2C__Timeout == 0x00) 
+    558              {
+    559                /* Generate Stop */
+    560                I2Cx->CR1 |= I2C_CR1_STOP;
+    561                return I2C__TIMEout;
+    562              } 
+    563            }
+    564            /* Read status register to clear ADDR flag */
+    565            I2Cx->SR1;
+    566            I2Cx->SR2;
+    567            //----------------------
+    568            /* Send data */
+    569            
+    570            /* Wait until TXE flag is set */
+    571            I2C__Timeout = I2C_TIMEOUT;
+    572            while (!(I2Cx->SR1 & I2C_SR1_TXE)) 
+    573            {
+    574              if (--I2C__Timeout == 0x00) 
+    575              {
+    576                /* Generate Stop */
+    577                I2Cx->CR1 |= I2C_CR1_STOP;
+    578                return I2C__TIMEout;
+    579              }
+    580            }    
+    581            /* Send I2C data */
+    582            I2Cx->DR = data;
+    583              /* Wait until BTF flag is set */
+    584              I2C__Timeout = I2C_TIMEOUT;
+    585              while (!(I2Cx->SR1 & I2C_SR1_BTF)) 
+    586              {
+    587                if (--I2C__Timeout == 0x00) 
+    588                {
+    589                  /* Generate Stop */
+    590                  I2Cx->CR1 |= I2C_CR1_STOP;
+    591                  return I2C__TIMEout;
+    592                }
+    593              }    
+    594            
+    595            //-------------- 
+    596            /* Generate Stop */
+    597            I2Cx->CR1 |= I2C_CR1_STOP;
+    598            return I2C__OK;
+    599          }
+    600          //---------------------
+    601          #endif /* INH_FLOW_TSI */
+    602          
+    603          /*************************** temp Convert **************************************/
+    604          
+    605          
+    606          
+
+
+ 
+
+ 
+
+
+Errors: none
+Warnings: none

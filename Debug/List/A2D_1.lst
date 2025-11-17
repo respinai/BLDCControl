@@ -1,0 +1,753 @@
+###############################################################################
+#
+# IAR ANSI C/C++ Compiler V7.40.3.8902/W32 for ARM        16/Aug/2017  13:40:18
+# Copyright 1999-2015 IAR Systems AB.
+#
+#    Cpu mode     =  thumb
+#    Endian       =  little
+#    Source file  =  
+#        E:\Ventilator\SoftWare\SVC_Software\SVC_Ver\MAIN Version\SVC2_4_01
+#        (960521)\modules\Source\A2D_1.c
+#    Command line =  
+#        "E:\Ventilator\SoftWare\SVC_Software\SVC_Ver\MAIN Version\SVC2_4_01
+#        (960521)\modules\Source\A2D_1.c" -D USE_STDPERIPH_DRIVER -D STM32F40XX
+#        -lC "E:\Ventilator\SoftWare\SVC_Software\SVC_Ver\MAIN
+#        Version\SVC2_4_01 (960521)\Debug\List\" -o
+#        "E:\Ventilator\SoftWare\SVC_Software\SVC_Ver\MAIN Version\SVC2_4_01
+#        (960521)\Debug\Obj\" --no_cse --no_unroll --no_inline --no_code_motion
+#        --no_tbaa --no_clustering --no_scheduling --debug --endian=little
+#        --cpu=Cortex-M4 -e --fpu=VFPv4_sp --dlib_config "C:\Program Files
+#        (x86)\IAR Systems\Embedded Workbench
+#        7.2\arm\INC\c\DLib_Config_Normal.h" -I
+#        "E:\Ventilator\SoftWare\SVC_Software\SVC_Ver\MAIN Version\SVC2_4_01
+#        (960521)\board\" -I "E:\Ventilator\SoftWare\SVC_Software\SVC_Ver\MAIN
+#        Version\SVC2_4_01 (960521)\app\" -I
+#        "E:\Ventilator\SoftWare\SVC_Software\SVC_Ver\MAIN Version\SVC2_4_01
+#        (960521)\Libraries\CMSIS\Device\ST\STM32F4xx\Include\" -I
+#        "E:\Ventilator\SoftWare\SVC_Software\SVC_Ver\MAIN Version\SVC2_4_01
+#        (960521)\Libraries\STM32F4xx_StdPeriph_Driver\inc\" -I
+#        "E:\Ventilator\SoftWare\SVC_Software\SVC_Ver\MAIN Version\SVC2_4_01
+#        (960521)\modules\Header\" -On --use_c++_inline -I "C:\Program Files
+#        (x86)\IAR Systems\Embedded Workbench 7.2\arm\CMSIS\Include\"
+#        --relaxed_fp
+#    List file    =  
+#        E:\Ventilator\SoftWare\SVC_Software\SVC_Ver\MAIN Version\SVC2_4_01
+#        (960521)\Debug\List\A2D_1.lst
+#    Object file  =  
+#        E:\Ventilator\SoftWare\SVC_Software\SVC_Ver\MAIN Version\SVC2_4_01
+#        (960521)\Debug\Obj\A2D_1.o
+#
+###############################################################################
+
+E:\Ventilator\SoftWare\SVC_Software\SVC_Ver\MAIN Version\SVC2_4_01  (960521)\modules\Source\A2D_1.c
+      1          //------------------------------------------------------------------------------
+      2          // SAADAT Co 
+      3          // VENTILATOR 
+      4          // DEVELOPER : MOJTABA REZAEI ASHTIYANI 
+      5          // VER 1.0
+      6          //------------------------------------------------------------------------------
+      7          
+      8          #include "A2D_1.h"
+      9          //------------------------------------------------------------------------------
+
+   \                                 In section .data, align 1
+     10          u8              A2D_Channel = ENDOFA2D_CHANNEL;
+   \                     A2D_Channel:
+   \   00000000   0x0F               DC8 15
+
+   \                                 In section .bss, align 4
+     11          Struct_ADCExt_Data                      VA2dExt_Data; 
+   \                     VA2dExt_Data:
+   \   00000000                      DS8 32
+
+   \                                 In section .bss, align 4
+     12          STRUCT_DATA_A2DSENSORS                  DATA_Sensors;
+   \                     DATA_Sensors:
+   \   00000000                      DS8 56
+     13          
+     14          //------------------------------------------------------------------------------
+     15          /*
+     16           * Read Data from " External A2D " 
+     17           * For each channel, 2-byte data is read and then combined. 
+     18          */
+
+   \                                 In section .text, align 2, keep-with-next
+     19          void A2DExt_Service(void)
+     20          {
+   \                     A2DExt_Service: (+1)
+   \   00000000   0xB580             PUSH     {R7,LR}
+     21            static    u8   CNT_O2Fault = 0,CNT_O2Fault2 = 0;
+     22            static    u8    State_RdData;
+     23            static    u16   VA2dExt_Data_Temp;// is temporary ; for combine 2-byte A2D Data, According to SPI Protocol
+     24            if(State_RdData == CONVERT_STEP1)//Read the first part of the information
+   \   00000002   0x.... 0x....      LDR.W    R0,??DataTable0
+   \   00000006   0x7800             LDRB     R0,[R0, #+0]
+   \   00000008   0x2800             CMP      R0,#+0
+   \   0000000A   0xD111             BNE.N    ??A2DExt_Service_0
+     25            {
+     26              State_RdData = CONVERT_STEP2;
+   \   0000000C   0x2001             MOVS     R0,#+1
+   \   0000000E   0x.... 0x....      LDR.W    R1,??DataTable0
+   \   00000012   0x7008             STRB     R0,[R1, #+0]
+     27              VA2dExt_Data_Temp = (SPI_I2S_ReceiveData(A2D_EXT) << 6) & 0xFFC0 ;/* 6 from Datasheet */
+   \   00000014   0x.... 0x....      LDR.W    R0,??DataTable0_1  ;; 0x40003800
+   \   00000018   0x.... 0x....      BL       SPI_I2S_ReceiveData
+   \   0000001C   0x0180             LSLS     R0,R0,#+6
+   \   0000001E   0x.... 0x....      LDR.W    R1,??DataTable0_2
+   \   00000022   0x8008             STRH     R0,[R1, #+0]
+     28              STARTREADING_A2DExt_ONECHANNEL(A2D_EXT);
+   \   00000024   0xF64A 0x2055      MOVW     R0,#+43605
+   \   00000028   0x.... 0x....      LDR.W    R1,??DataTable0_3  ;; 0x4000380c
+   \   0000002C   0x8008             STRH     R0,[R1, #+0]
+   \   0000002E   0xE205             B.N      ??A2DExt_Service_1
+     29            }
+     30            else //Read the second part of the data and then store it in a buffer
+     31            {
+     32              State_RdData = CONVERT_STEP1;
+   \                     ??A2DExt_Service_0: (+1)
+   \   00000030   0x2000             MOVS     R0,#+0
+   \   00000032   0x.... 0x....      LDR.W    R1,??DataTable0
+   \   00000036   0x7008             STRB     R0,[R1, #+0]
+     33              VA2dExt_Data_Temp |= (SPI_I2S_ReceiveData(A2D_EXT) >> 10) & 0x003F;/* >>10 from Datasheet */		
+   \   00000038   0x.... 0x....      LDR.W    R0,??DataTable0_1  ;; 0x40003800
+   \   0000003C   0x.... 0x....      BL       SPI_I2S_ReceiveData
+   \   00000040   0x.... 0x....      LDR.W    R1,??DataTable0_2
+   \   00000044   0x8809             LDRH     R1,[R1, #+0]
+   \   00000046   0xB280             UXTH     R0,R0            ;; ZeroExt  R0,R0,#+16,#+16
+   \   00000048   0xEA51 0x2090      ORRS     R0,R1,R0, LSR #+10
+   \   0000004C   0x.... 0x....      LDR.W    R1,??DataTable0_2
+   \   00000050   0x8008             STRH     R0,[R1, #+0]
+     34              GPIO_SetBits(A2DCS_PORT , A2DCS_PIN);       // CS High
+   \   00000052   0xF44F 0x5180      MOV      R1,#+4096
+   \   00000056   0x.... 0x....      LDR.W    R0,??DataTable0_4  ;; 0x40020400
+   \   0000005A   0x.... 0x....      BL       GPIO_SetBits
+     35              switch (A2D_Channel)
+   \   0000005E   0x.... 0x....      LDR.W    R0,??DataTable0_5
+   \   00000062   0x7800             LDRB     R0,[R0, #+0]
+   \   00000064   0x2800             CMP      R0,#+0
+   \   00000066   0xD020             BEQ.N    ??A2DExt_Service_2
+   \   00000068   0x2802             CMP      R0,#+2
+   \   0000006A   0xD05A             BEQ.N    ??A2DExt_Service_3
+   \   0000006C   0xD33B             BCC.N    ??A2DExt_Service_4
+   \   0000006E   0x2804             CMP      R0,#+4
+   \   00000070   0xF000 0x808A      BEQ.W    ??A2DExt_Service_5
+   \   00000074   0xD370             BCC.N    ??A2DExt_Service_6
+   \   00000076   0x2806             CMP      R0,#+6
+   \   00000078   0xF000 0x80B9      BEQ.W    ??A2DExt_Service_7
+   \   0000007C   0xF0C0 0x809F      BCC.W    ??A2DExt_Service_8
+   \   00000080   0x2808             CMP      R0,#+8
+   \   00000082   0xF000 0x811F      BEQ.W    ??A2DExt_Service_9
+   \   00000086   0xF0C0 0x80FE      BCC.W    ??A2DExt_Service_10
+   \   0000008A   0x280A             CMP      R0,#+10
+   \   0000008C   0xF000 0x814A      BEQ.W    ??A2DExt_Service_11
+   \   00000090   0xF0C0 0x8130      BCC.W    ??A2DExt_Service_12
+   \   00000094   0x280C             CMP      R0,#+12
+   \   00000096   0xF000 0x8175      BEQ.W    ??A2DExt_Service_13
+   \   0000009A   0xF0C0 0x815B      BCC.W    ??A2DExt_Service_14
+   \   0000009E   0x280E             CMP      R0,#+14
+   \   000000A0   0xF000 0x81A7      BEQ.W    ??A2DExt_Service_15
+   \   000000A4   0xF0C0 0x8186      BCC.W    ??A2DExt_Service_16
+   \   000000A8   0xE1C0             B.N      ??A2DExt_Service_17
+     36              {
+     37                case	READ_AIRFLOW_VF:
+     38                 SET_ADDRESS_EXA2D(AIRFLOWVT_ADD);        // Set Address for Next Channel A2D
+   \                     ??A2DExt_Service_2: (+1)
+   \   000000AA   0x.... 0x....      LDR.W    R0,??DataTable0_6  ;; 0x40021010
+   \   000000AE   0x6800             LDR      R0,[R0, #+0]
+   \   000000B0   0x0580             LSLS     R0,R0,#+22       ;; ZeroExtS R0,R0,#+22,#+22
+   \   000000B2   0x0D80             LSRS     R0,R0,#+22
+   \   000000B4   0xF450 0x6080      ORRS     R0,R0,#0x400
+   \   000000B8   0x.... 0x....      LDR.W    R1,??DataTable0_7  ;; 0x40021014
+   \   000000BC   0x6008             STR      R0,[R1, #+0]
+     39                 VA2dExt_Data.AirVf = VA2dExt_Data_Temp;
+   \   000000BE   0x.... 0x....      LDR.W    R0,??DataTable0_2
+   \   000000C2   0x8800             LDRH     R0,[R0, #+0]
+   \   000000C4   0x.... 0x....      LDR.W    R1,??DataTable0_8
+   \   000000C8   0x8048             STRH     R0,[R1, #+2]
+     40                 DATA_Sensors.A2D_AIRFLOW_VF = (u16)(((u32)(VA2dExt_Data_Temp * A2DEXT_VREFmv)) / A2DEXT_MAXVAL);
+   \   000000CA   0x.... 0x....      LDR.W    R0,??DataTable0_2
+   \   000000CE   0x8800             LDRH     R0,[R0, #+0]
+   \   000000D0   0xF241 0x3188      MOVW     R1,#+5000
+   \   000000D4   0x4348             MULS     R0,R1,R0
+   \   000000D6   0xF64F 0x71FF      MOVW     R1,#+65535
+   \   000000DA   0xFBB0 0xF0F1      UDIV     R0,R0,R1
+   \   000000DE   0x.... 0x....      LDR.W    R1,??DataTable0_9
+   \   000000E2   0x82C8             STRH     R0,[R1, #+22]
+     41                 break;/*--------->>>><<<<<---------*/
+   \   000000E4   0xE1A5             B.N      ??A2DExt_Service_18
+     42                case	READ_AIRFLOW_VT:
+     43                 SET_ADDRESS_EXA2D(O2FLOWVF_ADD);         // Set Address for Next Channel A2D
+   \                     ??A2DExt_Service_4: (+1)
+   \   000000E6   0x.... 0x....      LDR.W    R0,??DataTable0_6  ;; 0x40021010
+   \   000000EA   0x6800             LDR      R0,[R0, #+0]
+   \   000000EC   0x0580             LSLS     R0,R0,#+22       ;; ZeroExtS R0,R0,#+22,#+22
+   \   000000EE   0x0D80             LSRS     R0,R0,#+22
+   \   000000F0   0xF450 0x6000      ORRS     R0,R0,#0x800
+   \   000000F4   0x.... 0x....      LDR.W    R1,??DataTable0_7  ;; 0x40021014
+   \   000000F8   0x6008             STR      R0,[R1, #+0]
+     44                 VA2dExt_Data.AirVt = VA2dExt_Data_Temp;
+   \   000000FA   0x.... 0x....      LDR.W    R0,??DataTable0_2
+   \   000000FE   0x8800             LDRH     R0,[R0, #+0]
+   \   00000100   0x.... 0x....      LDR.W    R1,??DataTable0_8
+   \   00000104   0x8008             STRH     R0,[R1, #+0]
+     45                 DATA_Sensors.A2D_AIRFLOW_VT = (u16)(((u32)(VA2dExt_Data_Temp * A2DEXT_VREFmv)) / A2DEXT_MAXVAL);
+   \   00000106   0x.... 0x....      LDR.W    R0,??DataTable0_2
+   \   0000010A   0x8800             LDRH     R0,[R0, #+0]
+   \   0000010C   0xF241 0x3188      MOVW     R1,#+5000
+   \   00000110   0x4348             MULS     R0,R1,R0
+   \   00000112   0xF64F 0x71FF      MOVW     R1,#+65535
+   \   00000116   0xFBB0 0xF0F1      UDIV     R0,R0,R1
+   \   0000011A   0x.... 0x....      LDR.W    R1,??DataTable0_9
+   \   0000011E   0x8308             STRH     R0,[R1, #+24]
+     46                 break;/*--------->>>><<<<<---------*/
+   \   00000120   0xE187             B.N      ??A2DExt_Service_18
+     47                case	READ_O2FLOW_VF:
+     48                 SET_ADDRESS_EXA2D(O2FLOWVT_ADD);         // Set Address for Next Channel A2D
+   \                     ??A2DExt_Service_3: (+1)
+   \   00000122   0x.... 0x....      LDR.W    R0,??DataTable0_6  ;; 0x40021010
+   \   00000126   0x6800             LDR      R0,[R0, #+0]
+   \   00000128   0x0580             LSLS     R0,R0,#+22       ;; ZeroExtS R0,R0,#+22,#+22
+   \   0000012A   0x0D80             LSRS     R0,R0,#+22
+   \   0000012C   0xF450 0x6040      ORRS     R0,R0,#0xC00
+   \   00000130   0x.... 0x....      LDR.W    R1,??DataTable0_7  ;; 0x40021014
+   \   00000134   0x6008             STR      R0,[R1, #+0]
+     49                 VA2dExt_Data.O2Vf = VA2dExt_Data_Temp;
+   \   00000136   0x....             LDR.N    R0,??DataTable0_2
+   \   00000138   0x8800             LDRH     R0,[R0, #+0]
+   \   0000013A   0x.... 0x....      LDR.W    R1,??DataTable0_8
+   \   0000013E   0x80C8             STRH     R0,[R1, #+6]
+     50                 DATA_Sensors.A2D_O2FLOW_VF = (u16)(((u32)(VA2dExt_Data_Temp * A2DEXT_VREFmv)) / A2DEXT_MAXVAL);
+   \   00000140   0x....             LDR.N    R0,??DataTable0_2
+   \   00000142   0x8800             LDRH     R0,[R0, #+0]
+   \   00000144   0xF241 0x3188      MOVW     R1,#+5000
+   \   00000148   0x4348             MULS     R0,R1,R0
+   \   0000014A   0xF64F 0x71FF      MOVW     R1,#+65535
+   \   0000014E   0xFBB0 0xF0F1      UDIV     R0,R0,R1
+   \   00000152   0x....             LDR.N    R1,??DataTable0_9
+   \   00000154   0x8348             STRH     R0,[R1, #+26]
+     51                 break;/*--------->>>><<<<<---------*/
+   \   00000156   0xE16C             B.N      ??A2DExt_Service_18
+     52                case	READ_O2FLOW_VT:
+     53                 SET_ADDRESS_EXA2D(HLXFLOWVF_ADD);        // Set Address for Next Channel A2D
+   \                     ??A2DExt_Service_6: (+1)
+   \   00000158   0x....             LDR.N    R0,??DataTable0_6  ;; 0x40021010
+   \   0000015A   0x6800             LDR      R0,[R0, #+0]
+   \   0000015C   0x0580             LSLS     R0,R0,#+22       ;; ZeroExtS R0,R0,#+22,#+22
+   \   0000015E   0x0D80             LSRS     R0,R0,#+22
+   \   00000160   0xF450 0x5080      ORRS     R0,R0,#0x1000
+   \   00000164   0x....             LDR.N    R1,??DataTable0_7  ;; 0x40021014
+   \   00000166   0x6008             STR      R0,[R1, #+0]
+     54                 VA2dExt_Data.O2Vt = VA2dExt_Data_Temp;      
+   \   00000168   0x....             LDR.N    R0,??DataTable0_2
+   \   0000016A   0x8800             LDRH     R0,[R0, #+0]
+   \   0000016C   0x....             LDR.N    R1,??DataTable0_8
+   \   0000016E   0x8088             STRH     R0,[R1, #+4]
+     55                 DATA_Sensors.A2D_O2FLOW_VT = (u16)(((u32)(VA2dExt_Data_Temp * A2DEXT_VREFmv)) / A2DEXT_MAXVAL);
+   \   00000170   0x....             LDR.N    R0,??DataTable0_2
+   \   00000172   0x8800             LDRH     R0,[R0, #+0]
+   \   00000174   0xF241 0x3188      MOVW     R1,#+5000
+   \   00000178   0x4348             MULS     R0,R1,R0
+   \   0000017A   0xF64F 0x71FF      MOVW     R1,#+65535
+   \   0000017E   0xFBB0 0xF0F1      UDIV     R0,R0,R1
+   \   00000182   0x....             LDR.N    R1,??DataTable0_9
+   \   00000184   0x8388             STRH     R0,[R1, #+28]
+     56                 break;/*--------->>>><<<<<---------*///----------------------------------
+   \   00000186   0xE154             B.N      ??A2DExt_Service_18
+     57                case	READ_AMBIENTTEMP:// Ambient Tempereture
+     58                 SET_ADDRESS_EXA2D(HLXFLOWVT_ADD);        // Set Address for Next Channel A2D
+   \                     ??A2DExt_Service_5: (+1)
+   \   00000188   0x....             LDR.N    R0,??DataTable0_6  ;; 0x40021010
+   \   0000018A   0x6800             LDR      R0,[R0, #+0]
+   \   0000018C   0x0580             LSLS     R0,R0,#+22       ;; ZeroExtS R0,R0,#+22,#+22
+   \   0000018E   0x0D80             LSRS     R0,R0,#+22
+   \   00000190   0xF450 0x50A0      ORRS     R0,R0,#0x1400
+   \   00000194   0x....             LDR.N    R1,??DataTable0_7  ;; 0x40021014
+   \   00000196   0x6008             STR      R0,[R1, #+0]
+     59                 VA2dExt_Data.AmbientTempe = VA2dExt_Data_Temp;
+   \   00000198   0x....             LDR.N    R0,??DataTable0_2
+   \   0000019A   0x8800             LDRH     R0,[R0, #+0]
+   \   0000019C   0x....             LDR.N    R1,??DataTable0_8
+   \   0000019E   0x8148             STRH     R0,[R1, #+10]
+     60                 //DATA_Sensors.A2D_AmbientTemperature = (s16)(VA2dExt_Data.AmbientTempe / 10);
+     61                 DATA_Sensors.A2D_AmbientTemperature = (u16)((((u32)(VA2dExt_Data_Temp * A2DEXT_VREFmv)) / A2DEXT_MAXVAL)/10);
+   \   000001A0   0x....             LDR.N    R0,??DataTable0_2
+   \   000001A2   0x8800             LDRH     R0,[R0, #+0]
+   \   000001A4   0xF241 0x3188      MOVW     R1,#+5000
+   \   000001A8   0x4348             MULS     R0,R1,R0
+   \   000001AA   0xF64F 0x71FF      MOVW     R1,#+65535
+   \   000001AE   0xFBB0 0xF0F1      UDIV     R0,R0,R1
+   \   000001B2   0x210A             MOVS     R1,#+10
+   \   000001B4   0xFBB0 0xF0F1      UDIV     R0,R0,R1
+   \   000001B8   0x....             LDR.N    R1,??DataTable0_9
+   \   000001BA   0x83C8             STRH     R0,[R1, #+30]
+     62                 break;/*--------->>>><<<<<---------*/
+   \   000001BC   0xE139             B.N      ??A2DExt_Service_18
+     63                case	READ_HLXFLOW_VT:
+     64                 SET_ADDRESS_EXA2D(OXYGEN_ADD);           // Set Address for Next Channel A2D
+   \                     ??A2DExt_Service_8: (+1)
+   \   000001BE   0x....             LDR.N    R0,??DataTable0_6  ;; 0x40021010
+   \   000001C0   0x6800             LDR      R0,[R0, #+0]
+   \   000001C2   0x0580             LSLS     R0,R0,#+22       ;; ZeroExtS R0,R0,#+22,#+22
+   \   000001C4   0x0D80             LSRS     R0,R0,#+22
+   \   000001C6   0xF450 0x50C0      ORRS     R0,R0,#0x1800
+   \   000001CA   0x....             LDR.N    R1,??DataTable0_7  ;; 0x40021014
+   \   000001CC   0x6008             STR      R0,[R1, #+0]
+     65                 VA2dExt_Data.HLXVt = VA2dExt_Data_Temp;
+   \   000001CE   0x....             LDR.N    R0,??DataTable0_2
+   \   000001D0   0x8800             LDRH     R0,[R0, #+0]
+   \   000001D2   0x....             LDR.N    R1,??DataTable0_8
+   \   000001D4   0x8108             STRH     R0,[R1, #+8]
+     66                 DATA_Sensors.A2D_HLXFLOW_VT = (u16)(((u32)(VA2dExt_Data_Temp * A2DEXT_VREFmv)) / A2DEXT_MAXVAL);
+   \   000001D6   0x....             LDR.N    R0,??DataTable0_2
+   \   000001D8   0x8800             LDRH     R0,[R0, #+0]
+   \   000001DA   0xF241 0x3188      MOVW     R1,#+5000
+   \   000001DE   0x4348             MULS     R0,R1,R0
+   \   000001E0   0xF64F 0x71FF      MOVW     R1,#+65535
+   \   000001E4   0xFBB0 0xF0F1      UDIV     R0,R0,R1
+   \   000001E8   0x....             LDR.N    R1,??DataTable0_9
+   \   000001EA   0x8408             STRH     R0,[R1, #+32]
+     67                 break;/*--------->>>><<<<<---------*/
+   \   000001EC   0xE121             B.N      ??A2DExt_Service_18
+     68                case	READ_OXYGEN:
+     69                 SET_ADDRESS_EXA2D(S3V3_ADD);             // Set Address for Next Channel A2D
+   \                     ??A2DExt_Service_7: (+1)
+   \   000001EE   0x....             LDR.N    R0,??DataTable0_6  ;; 0x40021010
+   \   000001F0   0x6800             LDR      R0,[R0, #+0]
+   \   000001F2   0x0580             LSLS     R0,R0,#+22       ;; ZeroExtS R0,R0,#+22,#+22
+   \   000001F4   0x0D80             LSRS     R0,R0,#+22
+   \   000001F6   0xF450 0x50E0      ORRS     R0,R0,#0x1C00
+   \   000001FA   0x....             LDR.N    R1,??DataTable0_7  ;; 0x40021014
+   \   000001FC   0x6008             STR      R0,[R1, #+0]
+     70                 VA2dExt_Data.Oxygen = (u16)(((u32)( VA2dExt_Data_Temp * A2DEXT_VREFmv)) / A2DEXT_MAXVAL);
+   \   000001FE   0x....             LDR.N    R0,??DataTable0_2
+   \   00000200   0x8800             LDRH     R0,[R0, #+0]
+   \   00000202   0xF241 0x3188      MOVW     R1,#+5000
+   \   00000206   0x4348             MULS     R0,R1,R0
+   \   00000208   0xF64F 0x71FF      MOVW     R1,#+65535
+   \   0000020C   0xFBB0 0xF0F1      UDIV     R0,R0,R1
+   \   00000210   0x....             LDR.N    R1,??DataTable0_8
+   \   00000212   0x8188             STRH     R0,[R1, #+12]
+     71                 DATA_Sensors.Oxygen = (u16)(((u32)( VA2dExt_Data_Temp * A2DEXT_VREFmv)) / A2DEXT_MAXVAL);
+   \   00000214   0x....             LDR.N    R0,??DataTable0_2
+   \   00000216   0x8800             LDRH     R0,[R0, #+0]
+   \   00000218   0xF241 0x3188      MOVW     R1,#+5000
+   \   0000021C   0x4348             MULS     R0,R1,R0
+   \   0000021E   0xF64F 0x71FF      MOVW     R1,#+65535
+   \   00000222   0xFBB0 0xF0F1      UDIV     R0,R0,R1
+   \   00000226   0x....             LDR.N    R1,??DataTable0_9
+   \   00000228   0x81C8             STRH     R0,[R1, #+14]
+     72                 if( DATA_Sensors.Oxygen < 200 )
+   \   0000022A   0x....             LDR.N    R0,??DataTable0_9
+   \   0000022C   0x89C0             LDRH     R0,[R0, #+14]
+   \   0000022E   0x28C8             CMP      R0,#+200
+   \   00000230   0xDA14             BGE.N    ??A2DExt_Service_19
+     73                 {
+     74                     CNT_O2Fault2 = 0;
+   \   00000232   0x2000             MOVS     R0,#+0
+   \   00000234   0x....             LDR.N    R1,??DataTable0_10
+   \   00000236   0x7008             STRB     R0,[R1, #+0]
+     75                     if(++CNT_O2Fault >= 200)     //0.5Sec
+   \   00000238   0x....             LDR.N    R0,??DataTable0_11
+   \   0000023A   0x7800             LDRB     R0,[R0, #+0]
+   \   0000023C   0x1C40             ADDS     R0,R0,#+1
+   \   0000023E   0x....             LDR.N    R1,??DataTable0_11
+   \   00000240   0x7008             STRB     R0,[R1, #+0]
+   \   00000242   0x....             LDR.N    R0,??DataTable0_11
+   \   00000244   0x7800             LDRB     R0,[R0, #+0]
+   \   00000246   0x28C8             CMP      R0,#+200
+   \   00000248   0xDB1C             BLT.N    ??A2DExt_Service_20
+     76                         DATA_Sensors.HWErr.O2SENSOR = TRUE;
+   \   0000024A   0x....             LDR.N    R0,??DataTable0_9
+   \   0000024C   0xF8D0 0x0011      LDR      R0,[R0, #+17]
+   \   00000250   0xF050 0x0020      ORRS     R0,R0,#0x20
+   \   00000254   0x....             LDR.N    R1,??DataTable0_9
+   \   00000256   0xF8C1 0x0011      STR      R0,[R1, #+17]
+   \   0000025A   0xE013             B.N      ??A2DExt_Service_20
+     77                 }
+     78                 else
+     79                 {
+     80                     CNT_O2Fault = 0;
+   \                     ??A2DExt_Service_19: (+1)
+   \   0000025C   0x2000             MOVS     R0,#+0
+   \   0000025E   0x....             LDR.N    R1,??DataTable0_11
+   \   00000260   0x7008             STRB     R0,[R1, #+0]
+     81                     if(++CNT_O2Fault2 >= 200)    //0.5Sec 
+   \   00000262   0x....             LDR.N    R0,??DataTable0_10
+   \   00000264   0x7800             LDRB     R0,[R0, #+0]
+   \   00000266   0x1C40             ADDS     R0,R0,#+1
+   \   00000268   0x....             LDR.N    R1,??DataTable0_10
+   \   0000026A   0x7008             STRB     R0,[R1, #+0]
+   \   0000026C   0x....             LDR.N    R0,??DataTable0_10
+   \   0000026E   0x7800             LDRB     R0,[R0, #+0]
+   \   00000270   0x28C8             CMP      R0,#+200
+   \   00000272   0xDB07             BLT.N    ??A2DExt_Service_20
+     82                         DATA_Sensors.HWErr.O2SENSOR = FALSE;
+   \   00000274   0x....             LDR.N    R0,??DataTable0_9
+   \   00000276   0xF8D0 0x0011      LDR      R0,[R0, #+17]
+   \   0000027A   0xF030 0x0020      BICS     R0,R0,#0x20
+   \   0000027E   0x....             LDR.N    R1,??DataTable0_9
+   \   00000280   0xF8C1 0x0011      STR      R0,[R1, #+17]
+     83                 }
+     84                 break;/*--------->>>><<<<<---------*/
+   \                     ??A2DExt_Service_20: (+1)
+   \   00000284   0xE0D5             B.N      ??A2DExt_Service_18
+     85                case	READ_Sample_3V3:
+     86                 SET_ADDRESS_EXA2D(PVALAIRCURR_ADD);      // Set Address for Next Channel A2D
+   \                     ??A2DExt_Service_10: (+1)
+   \   00000286   0x....             LDR.N    R0,??DataTable0_6  ;; 0x40021010
+   \   00000288   0x6800             LDR      R0,[R0, #+0]
+   \   0000028A   0x0580             LSLS     R0,R0,#+22       ;; ZeroExtS R0,R0,#+22,#+22
+   \   0000028C   0x0D80             LSRS     R0,R0,#+22
+   \   0000028E   0xF450 0x5000      ORRS     R0,R0,#0x2000
+   \   00000292   0x....             LDR.N    R1,??DataTable0_7  ;; 0x40021014
+   \   00000294   0x6008             STR      R0,[R1, #+0]
+     87                 VA2dExt_Data.S3V3 = (u16)(((u32)(VA2dExt_Data_Temp * A2DEXT_VREFmv)) / A2DEXT_MAXVAL);//VA2dExt.Data.Temp;
+   \   00000296   0x....             LDR.N    R0,??DataTable0_2
+   \   00000298   0x8800             LDRH     R0,[R0, #+0]
+   \   0000029A   0xF241 0x3188      MOVW     R1,#+5000
+   \   0000029E   0x4348             MULS     R0,R1,R0
+   \   000002A0   0xF64F 0x71FF      MOVW     R1,#+65535
+   \   000002A4   0xFBB0 0xF0F1      UDIV     R0,R0,R1
+   \   000002A8   0x....             LDR.N    R1,??DataTable0_8
+   \   000002AA   0x81C8             STRH     R0,[R1, #+14]
+     88                 DATA_Sensors.A2D_Sample_3V3 = (u16)(((u32)(VA2dExt_Data_Temp * A2DEXT_VREFmv)) / A2DEXT_MAXVAL);
+   \   000002AC   0x....             LDR.N    R0,??DataTable0_2
+   \   000002AE   0x8800             LDRH     R0,[R0, #+0]
+   \   000002B0   0xF241 0x3188      MOVW     R1,#+5000
+   \   000002B4   0x4348             MULS     R0,R1,R0
+   \   000002B6   0xF64F 0x71FF      MOVW     R1,#+65535
+   \   000002BA   0xFBB0 0xF0F1      UDIV     R0,R0,R1
+   \   000002BE   0x....             LDR.N    R1,??DataTable0_9
+   \   000002C0   0x8448             STRH     R0,[R1, #+34]
+     89                 break;/*--------->>>><<<<<---------*/
+   \   000002C2   0xE0B6             B.N      ??A2DExt_Service_18
+     90                case	READ_PVALAIR_CURR:
+     91                 SET_ADDRESS_EXA2D(PVALO2CURR_ADD);       // Set Address for Next Channel A2D
+   \                     ??A2DExt_Service_9: (+1)
+   \   000002C4   0x....             LDR.N    R0,??DataTable0_6  ;; 0x40021010
+   \   000002C6   0x6800             LDR      R0,[R0, #+0]
+   \   000002C8   0x0580             LSLS     R0,R0,#+22       ;; ZeroExtS R0,R0,#+22,#+22
+   \   000002CA   0x0D80             LSRS     R0,R0,#+22
+   \   000002CC   0xF450 0x4080      ORRS     R0,R0,#0x4000
+   \   000002D0   0x....             LDR.N    R1,??DataTable0_7  ;; 0x40021014
+   \   000002D2   0x6008             STR      R0,[R1, #+0]
+     92                 VA2dExt_Data.PAirCurr = VA2dExt_Data_Temp;
+   \   000002D4   0x....             LDR.N    R0,??DataTable0_2
+   \   000002D6   0x8800             LDRH     R0,[R0, #+0]
+   \   000002D8   0x....             LDR.N    R1,??DataTable0_8
+   \   000002DA   0x8208             STRH     R0,[R1, #+16]
+     93                 DATA_Sensors.CURR_PVALAIR = (u16)(((u32)(VA2dExt_Data_Temp * A2DEXT_VREFmv)) / A2DEXT_MAXVAL);
+   \   000002DC   0x....             LDR.N    R0,??DataTable0_2
+   \   000002DE   0x8800             LDRH     R0,[R0, #+0]
+   \   000002E0   0xF241 0x3188      MOVW     R1,#+5000
+   \   000002E4   0x4348             MULS     R0,R1,R0
+   \   000002E6   0xF64F 0x71FF      MOVW     R1,#+65535
+   \   000002EA   0xFBB0 0xF0F1      UDIV     R0,R0,R1
+   \   000002EE   0x....             LDR.N    R1,??DataTable0_9
+   \   000002F0   0x8508             STRH     R0,[R1, #+40]
+     94                 break;/*--------->>>><<<<<---------*/
+   \   000002F2   0xE09E             B.N      ??A2DExt_Service_18
+     95                case	READ_PVALO2_CURR:
+     96                 SET_ADDRESS_EXA2D(INHVALCURR_ADD);       // Set Address for Next Channel A2D
+   \                     ??A2DExt_Service_12: (+1)
+   \   000002F4   0x....             LDR.N    R0,??DataTable0_6  ;; 0x40021010
+   \   000002F6   0x6800             LDR      R0,[R0, #+0]
+   \   000002F8   0x0580             LSLS     R0,R0,#+22       ;; ZeroExtS R0,R0,#+22,#+22
+   \   000002FA   0x0D80             LSRS     R0,R0,#+22
+   \   000002FC   0xF450 0x40C0      ORRS     R0,R0,#0x6000
+   \   00000300   0x....             LDR.N    R1,??DataTable0_7  ;; 0x40021014
+   \   00000302   0x6008             STR      R0,[R1, #+0]
+     97                 VA2dExt_Data.PO2Curr = VA2dExt_Data_Temp;
+   \   00000304   0x....             LDR.N    R0,??DataTable0_2
+   \   00000306   0x8800             LDRH     R0,[R0, #+0]
+   \   00000308   0x....             LDR.N    R1,??DataTable0_8
+   \   0000030A   0x8248             STRH     R0,[R1, #+18]
+     98                 DATA_Sensors.CURR_PVALO2 = (u16)(((u32)(VA2dExt_Data_Temp * A2DEXT_VREFmv)) / A2DEXT_MAXVAL); 
+   \   0000030C   0x....             LDR.N    R0,??DataTable0_2
+   \   0000030E   0x8800             LDRH     R0,[R0, #+0]
+   \   00000310   0xF241 0x3188      MOVW     R1,#+5000
+   \   00000314   0x4348             MULS     R0,R1,R0
+   \   00000316   0xF64F 0x71FF      MOVW     R1,#+65535
+   \   0000031A   0xFBB0 0xF0F1      UDIV     R0,R0,R1
+   \   0000031E   0x....             LDR.N    R1,??DataTable0_9
+   \   00000320   0x8548             STRH     R0,[R1, #+42]
+     99                 break;/*--------->>>><<<<<---------*/
+   \   00000322   0xE086             B.N      ??A2DExt_Service_18
+    100                case	READ_INHVAL_CURR:
+    101                 SET_ADDRESS_EXA2D(EXHVALCURR_ADD);       // Set Address for Next Channel A2D
+   \                     ??A2DExt_Service_11: (+1)
+   \   00000324   0x....             LDR.N    R0,??DataTable0_6  ;; 0x40021010
+   \   00000326   0x6800             LDR      R0,[R0, #+0]
+   \   00000328   0x0580             LSLS     R0,R0,#+22       ;; ZeroExtS R0,R0,#+22,#+22
+   \   0000032A   0x0D80             LSRS     R0,R0,#+22
+   \   0000032C   0xF450 0x4000      ORRS     R0,R0,#0x8000
+   \   00000330   0x....             LDR.N    R1,??DataTable0_7  ;; 0x40021014
+   \   00000332   0x6008             STR      R0,[R1, #+0]
+    102                 VA2dExt_Data.PINHCurr = VA2dExt_Data_Temp ;
+   \   00000334   0x....             LDR.N    R0,??DataTable0_2
+   \   00000336   0x8800             LDRH     R0,[R0, #+0]
+   \   00000338   0x....             LDR.N    R1,??DataTable0_8
+   \   0000033A   0x8288             STRH     R0,[R1, #+20]
+    103                 DATA_Sensors.CURR_INHVAL = (u16)(((u32)( VA2dExt_Data_Temp * A2DEXT_VREFmv)) / A2DEXT_MAXVAL);
+   \   0000033C   0x....             LDR.N    R0,??DataTable0_2
+   \   0000033E   0x8800             LDRH     R0,[R0, #+0]
+   \   00000340   0xF241 0x3188      MOVW     R1,#+5000
+   \   00000344   0x4348             MULS     R0,R1,R0
+   \   00000346   0xF64F 0x71FF      MOVW     R1,#+65535
+   \   0000034A   0xFBB0 0xF0F1      UDIV     R0,R0,R1
+   \   0000034E   0x....             LDR.N    R1,??DataTable0_9
+   \   00000350   0x8588             STRH     R0,[R1, #+44]
+    104                 break;/*--------->>>><<<<<---------*/
+   \   00000352   0xE06E             B.N      ??A2DExt_Service_18
+    105                case	READ_EXHVAL_CURR:
+    106                 SET_ADDRESS_EXA2D(HEATERCURR_ADD);       // Set Address for Next Channel A2D
+   \                     ??A2DExt_Service_14: (+1)
+   \   00000354   0x....             LDR.N    R0,??DataTable0_6  ;; 0x40021010
+   \   00000356   0x6800             LDR      R0,[R0, #+0]
+   \   00000358   0x0580             LSLS     R0,R0,#+22       ;; ZeroExtS R0,R0,#+22,#+22
+   \   0000035A   0x0D80             LSRS     R0,R0,#+22
+   \   0000035C   0xF450 0x4020      ORRS     R0,R0,#0xA000
+   \   00000360   0x....             LDR.N    R1,??DataTable0_7  ;; 0x40021014
+   \   00000362   0x6008             STR      R0,[R1, #+0]
+    107                 VA2dExt_Data.PEXHCurr = VA2dExt_Data_Temp;
+   \   00000364   0x....             LDR.N    R0,??DataTable0_2
+   \   00000366   0x8800             LDRH     R0,[R0, #+0]
+   \   00000368   0x....             LDR.N    R1,??DataTable0_8
+   \   0000036A   0x82C8             STRH     R0,[R1, #+22]
+    108                 DATA_Sensors.CURR_EXHVAL = (u16)(((u32)(VA2dExt_Data_Temp * A2DEXT_VREFmv)) / A2DEXT_MAXVAL);
+   \   0000036C   0x....             LDR.N    R0,??DataTable0_2
+   \   0000036E   0x8800             LDRH     R0,[R0, #+0]
+   \   00000370   0xF241 0x3188      MOVW     R1,#+5000
+   \   00000374   0x4348             MULS     R0,R1,R0
+   \   00000376   0xF64F 0x71FF      MOVW     R1,#+65535
+   \   0000037A   0xFBB0 0xF0F1      UDIV     R0,R0,R1
+   \   0000037E   0x....             LDR.N    R1,??DataTable0_9
+   \   00000380   0x85C8             STRH     R0,[R1, #+46]
+    109                 break;/*--------->>>><<<<<---------*/
+   \   00000382   0xE056             B.N      ??A2DExt_Service_18
+    110                case	READ_HEATER_CURR:
+    111                 SET_ADDRESS_EXA2D(VCCS_ADD);             // Set Address for Next Channel A2D
+   \                     ??A2DExt_Service_13: (+1)
+   \   00000384   0x....             LDR.N    R0,??DataTable0_6  ;; 0x40021010
+   \   00000386   0x6800             LDR      R0,[R0, #+0]
+   \   00000388   0x0580             LSLS     R0,R0,#+22       ;; ZeroExtS R0,R0,#+22,#+22
+   \   0000038A   0x0D80             LSRS     R0,R0,#+22
+   \   0000038C   0xF450 0x4040      ORRS     R0,R0,#0xC000
+   \   00000390   0x....             LDR.N    R1,??DataTable0_7  ;; 0x40021014
+   \   00000392   0x6008             STR      R0,[R1, #+0]
+    112                 VA2dExt_Data.PHeaterCurr = VA2dExt_Data_Temp;
+   \   00000394   0x....             LDR.N    R0,??DataTable0_2
+   \   00000396   0x8800             LDRH     R0,[R0, #+0]
+   \   00000398   0x....             LDR.N    R1,??DataTable0_8
+   \   0000039A   0x8308             STRH     R0,[R1, #+24]
+    113                 DATA_Sensors.CURR_HEATER = (u16)(((u32)(VA2dExt_Data_Temp * A2DEXT_VREFmv)) / A2DEXT_MAXVAL);
+   \   0000039C   0x....             LDR.N    R0,??DataTable0_2
+   \   0000039E   0x8800             LDRH     R0,[R0, #+0]
+   \   000003A0   0xF241 0x3188      MOVW     R1,#+5000
+   \   000003A4   0x4348             MULS     R0,R1,R0
+   \   000003A6   0xF64F 0x71FF      MOVW     R1,#+65535
+   \   000003AA   0xFBB0 0xF0F1      UDIV     R0,R0,R1
+   \   000003AE   0x....             LDR.N    R1,??DataTable0_9
+   \   000003B0   0x8608             STRH     R0,[R1, #+48]
+    114                 break;/*--------->>>><<<<<---------*/
+   \   000003B2   0xE03E             B.N      ??A2DExt_Service_18
+    115                case	READ_Sample_VCC:
+    116                 SET_ADDRESS_EXA2D(VINS_ADD);             // Set Address for Next Channel A2D
+   \                     ??A2DExt_Service_16: (+1)
+   \   000003B4   0x....             LDR.N    R0,??DataTable0_6  ;; 0x40021010
+   \   000003B6   0x6800             LDR      R0,[R0, #+0]
+   \   000003B8   0x0580             LSLS     R0,R0,#+22       ;; ZeroExtS R0,R0,#+22,#+22
+   \   000003BA   0x0D80             LSRS     R0,R0,#+22
+   \   000003BC   0xF450 0x4060      ORRS     R0,R0,#0xE000
+   \   000003C0   0x....             LDR.N    R1,??DataTable0_7  ;; 0x40021014
+   \   000003C2   0x6008             STR      R0,[R1, #+0]
+    117                 VA2dExt_Data.SVcc =(u16)(((u32)( VA2dExt_Data_Temp * A2DEXT_VREFmv)) / A2DEXT_MAXVAL); 
+   \   000003C4   0x....             LDR.N    R0,??DataTable0_2
+   \   000003C6   0x8800             LDRH     R0,[R0, #+0]
+   \   000003C8   0xF241 0x3188      MOVW     R1,#+5000
+   \   000003CC   0x4348             MULS     R0,R1,R0
+   \   000003CE   0xF64F 0x71FF      MOVW     R1,#+65535
+   \   000003D2   0xFBB0 0xF0F1      UDIV     R0,R0,R1
+   \   000003D6   0x....             LDR.N    R1,??DataTable0_8
+   \   000003D8   0x8348             STRH     R0,[R1, #+26]
+    118                 DATA_Sensors.A2D_Sample_VCC = (u16)(((u32)(VA2dExt_Data_Temp * A2DEXT_VREFmv)) / A2DEXT_MAXVAL);
+   \   000003DA   0x....             LDR.N    R0,??DataTable0_2
+   \   000003DC   0x8800             LDRH     R0,[R0, #+0]
+   \   000003DE   0xF241 0x3188      MOVW     R1,#+5000
+   \   000003E2   0x4348             MULS     R0,R1,R0
+   \   000003E4   0xF64F 0x71FF      MOVW     R1,#+65535
+   \   000003E8   0xFBB0 0xF0F1      UDIV     R0,R0,R1
+   \   000003EC   0x....             LDR.N    R1,??DataTable0_9
+   \   000003EE   0x8488             STRH     R0,[R1, #+36]
+    119                 break;/*--------->>>><<<<<---------*/
+   \   000003F0   0xE01F             B.N      ??A2DExt_Service_18
+    120                case	READ_Sample_VIN:
+    121                 SET_ADDRESS_EXA2D(AIRFLOWVF_ADD);        // Set Address for Next Channel A2D        
+   \                     ??A2DExt_Service_15: (+1)
+   \   000003F2   0x....             LDR.N    R0,??DataTable0_6  ;; 0x40021010
+   \   000003F4   0x6800             LDR      R0,[R0, #+0]
+   \   000003F6   0x0580             LSLS     R0,R0,#+22       ;; ZeroExtS R0,R0,#+22,#+22
+   \   000003F8   0x0D80             LSRS     R0,R0,#+22
+   \   000003FA   0x....             LDR.N    R1,??DataTable0_7  ;; 0x40021014
+   \   000003FC   0x6008             STR      R0,[R1, #+0]
+    122                 VA2dExt_Data.SVin =(u16)(((u32)(VA2dExt_Data_Temp * A2DEXT_VREFmv)) / A2DEXT_MAXVAL);
+   \   000003FE   0x....             LDR.N    R0,??DataTable0_2
+   \   00000400   0x8800             LDRH     R0,[R0, #+0]
+   \   00000402   0xF241 0x3188      MOVW     R1,#+5000
+   \   00000406   0x4348             MULS     R0,R1,R0
+   \   00000408   0xF64F 0x71FF      MOVW     R1,#+65535
+   \   0000040C   0xFBB0 0xF0F1      UDIV     R0,R0,R1
+   \   00000410   0x....             LDR.N    R1,??DataTable0_8
+   \   00000412   0x8388             STRH     R0,[R1, #+28]
+    123                 DATA_Sensors.A2D_Sample_VIN = (u16)(((u32)(VA2dExt_Data_Temp * A2DEXT_VREFmv)) / A2DEXT_MAXVAL);
+   \   00000414   0x....             LDR.N    R0,??DataTable0_2
+   \   00000416   0x8800             LDRH     R0,[R0, #+0]
+   \   00000418   0xF241 0x3188      MOVW     R1,#+5000
+   \   0000041C   0x4348             MULS     R0,R1,R0
+   \   0000041E   0xF64F 0x71FF      MOVW     R1,#+65535
+   \   00000422   0xFBB0 0xF0F1      UDIV     R0,R0,R1
+   \   00000426   0x....             LDR.N    R1,??DataTable0_9
+   \   00000428   0x84C8             STRH     R0,[R1, #+38]
+    124                 break;/*--------->>>><<<<<---------*/
+   \   0000042A   0xE002             B.N      ??A2DExt_Service_18
+    125              default:
+    126                A2D_Channel = ENDOFA2D_CHANNEL;
+   \                     ??A2DExt_Service_17: (+1)
+   \   0000042C   0x200F             MOVS     R0,#+15
+   \   0000042E   0x....             LDR.N    R1,??DataTable0_5
+   \   00000430   0x7008             STRB     R0,[R1, #+0]
+    127                break;
+    128              }//switch	
+    129              A2D_Channel++;    
+   \                     ??A2DExt_Service_18: (+1)
+   \   00000432   0x....             LDR.N    R0,??DataTable0_5
+   \   00000434   0x7800             LDRB     R0,[R0, #+0]
+   \   00000436   0x1C40             ADDS     R0,R0,#+1
+   \   00000438   0x....             LDR.N    R1,??DataTable0_5
+   \   0000043A   0x7008             STRB     R0,[R1, #+0]
+    130            } //else
+    131           
+    132          }
+   \                     ??A2DExt_Service_1: (+1)
+   \   0000043C   0xBD01             POP      {R0,PC}          ;; return
+
+   \                                 In section .bss, align 1
+   \                     ??CNT_O2Fault:
+   \   00000000                      DS8 1
+
+   \                                 In section .bss, align 1
+   \                     ??CNT_O2Fault2:
+   \   00000000                      DS8 1
+
+   \                                 In section .bss, align 1
+   \                     ??State_RdData:
+   \   00000000                      DS8 1
+
+   \                                 In section .bss, align 2
+   \                     ??VA2dExt_Data_Temp:
+   \   00000000                      DS8 2
+    133          //----------------------------------------------------------------------------------
+
+   \                                 In section .text, align 2, keep-with-next
+    134          void A2D_INITIALIZE (void)
+    135          {
+    136            return;
+   \                     A2D_INITIALIZE: (+1)
+   \   00000000   0x4770             BX       LR               ;; return
+    137          }
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable0:
+   \   00000000   0x........         DC32     ??State_RdData
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable0_1:
+   \   00000000   0x40003800         DC32     0x40003800
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable0_2:
+   \   00000000   0x........         DC32     ??VA2dExt_Data_Temp
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable0_3:
+   \   00000000   0x4000380C         DC32     0x4000380c
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable0_4:
+   \   00000000   0x40020400         DC32     0x40020400
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable0_5:
+   \   00000000   0x........         DC32     A2D_Channel
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable0_6:
+   \   00000000   0x40021010         DC32     0x40021010
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable0_7:
+   \   00000000   0x40021014         DC32     0x40021014
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable0_8:
+   \   00000000   0x........         DC32     VA2dExt_Data
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable0_9:
+   \   00000000   0x........         DC32     DATA_Sensors
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable0_10:
+   \   00000000   0x........         DC32     ??CNT_O2Fault2
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable0_11:
+   \   00000000   0x........         DC32     ??CNT_O2Fault
+    138          //----------------------------------------------------------------------------------
+
+   Maximum stack usage in bytes:
+
+   .cstack Function
+   ------- --------
+       8   A2DExt_Service
+         8   -> GPIO_SetBits
+         8   -> SPI_I2S_ReceiveData
+       0   A2D_INITIALIZE
+
+
+   Section sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+       4  ??DataTable0
+       4  ??DataTable0_1
+       4  ??DataTable0_10
+       4  ??DataTable0_11
+       4  ??DataTable0_2
+       4  ??DataTable0_3
+       4  ??DataTable0_4
+       4  ??DataTable0_5
+       4  ??DataTable0_6
+       4  ??DataTable0_7
+       4  ??DataTable0_8
+       4  ??DataTable0_9
+    1086  A2DExt_Service
+       1  A2D_Channel
+       2  A2D_INITIALIZE
+       1  CNT_O2Fault
+       1  CNT_O2Fault2
+      56  DATA_Sensors
+       1  State_RdData
+      32  VA2dExt_Data
+       2  VA2dExt_Data_Temp
+
+ 
+    93 bytes in section .bss
+     1 byte  in section .data
+ 1 136 bytes in section .text
+ 
+ 1 136 bytes of CODE memory
+    94 bytes of DATA memory
+
+Errors: none
+Warnings: none

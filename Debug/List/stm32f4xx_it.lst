@@ -1,0 +1,281 @@
+###############################################################################
+#
+# IAR ANSI C/C++ Compiler V7.40.3.8902/W32 for ARM        05/Nov/2025  15:02:26
+# Copyright 1999-2015 IAR Systems AB.
+#
+#    Cpu mode     =  thumb
+#    Endian       =  little
+#    Source file  =  
+#        D:\Turbo Fan\Codes\14030723 BLDC-valve2 added\app\stm32f4xx_it.c
+#    Command line =  
+#        "D:\Turbo Fan\Codes\14030723 BLDC-valve2 added\app\stm32f4xx_it.c" -D
+#        USE_STDPERIPH_DRIVER -D STM32F40XX -lC "D:\Turbo Fan\Codes\14030723
+#        BLDC-valve2 added\Debug\List\" -o "D:\Turbo Fan\Codes\14030723
+#        BLDC-valve2 added\Debug\Obj\" --no_cse --no_unroll --no_inline
+#        --no_code_motion --no_tbaa --no_clustering --no_scheduling --debug
+#        --endian=little --cpu=Cortex-M4 -e --fpu=VFPv4_sp --dlib_config
+#        "C:\Program Files (x86)\IAR Systems\Embedded Workbench
+#        7.2\arm\INC\c\DLib_Config_Normal.h" -I "D:\Turbo Fan\Codes\14030723
+#        BLDC-valve2 added\board\" -I "D:\Turbo Fan\Codes\14030723 BLDC-valve2
+#        added\app\" -I "D:\Turbo Fan\Codes\14030723 BLDC-valve2
+#        added\Libraries\CMSIS\Device\ST\STM32F4xx\Include\" -I "D:\Turbo
+#        Fan\Codes\14030723 BLDC-valve2
+#        added\Libraries\STM32F4xx_StdPeriph_Driver\inc\" -I "D:\Turbo
+#        Fan\Codes\14030723 BLDC-valve2 added\modules\Header\" -On
+#        --use_c++_inline -I "C:\Program Files (x86)\IAR Systems\Embedded
+#        Workbench 7.2\arm\CMSIS\Include\" --relaxed_fp
+#    List file    =  
+#        D:\Turbo Fan\Codes\14030723 BLDC-valve2
+#        added\Debug\List\stm32f4xx_it.lst
+#    Object file  =  
+#        D:\Turbo Fan\Codes\14030723 BLDC-valve2 added\Debug\Obj\stm32f4xx_it.o
+#
+###############################################################################
+
+D:\Turbo Fan\Codes\14030723 BLDC-valve2 added\app\stm32f4xx_it.c
+      1          /**
+      2          ******************************************************************************
+      3          * @file    Project/STM32F4xx_StdPeriph_Templates/stm32f4xx_it.c 
+      4          * @author  MCD Application Team
+      5          * @version V1.3.0
+      6          * @date    13-November-2013
+      7          * @brief   Main Interrupt Service Routines.
+      8          *          This file provides template for all exceptions handler and 
+      9          *          peripherals interrupt service routine.
+     10          ******************************************************************************
+     11          * @attention
+     12          *
+     13          * <h2><center>&copy; COPYRIGHT 2013 STMicroelectronics</center></h2>
+     14          *
+     15          * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
+     16          * You may not use this file except in compliance with the License.
+     17          * You may obtain a copy of the License at:
+     18          *
+     19          *        http://www.st.com/software_license_agreement_liberty_v2
+     20          *
+     21          * Unless required by applicable law or agreed to in writing, software 
+     22          * distributed under the License is distributed on an "AS IS" BASIS, 
+     23          * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     24          * See the License for the specific language governing permissions and
+     25          * limitations under the License.
+     26          *
+     27          ******************************************************************************
+     28          */
+     29          
+     30          /* Includes ------------------------------------------------------------------*/
+     31          #include "stm32f4xx_it.h"
+     32          /*//#include "main.h"  */  
+     33          /** @addtogroup Template_Project
+     34          * @{
+     35          */
+     36          
+     37          /* Private typedef -----------------------------------------------------------*/
+     38          /* Private define ------------------------------------------------------------*/
+     39          /* Private macro -------------------------------------------------------------*/
+     40          /* Private variables ---------------------------------------------------------*/
+     41          /* Private function prototypes -----------------------------------------------*/
+     42          /* Private functions ---------------------------------------------------------*/
+     43          
+     44          /******************************************************************************/
+     45          /*            Cortex-M4 Processor Exceptions Handlers                         */
+     46          /******************************************************************************/
+     47          
+     48          /**
+     49          * @brief  This function handles NMI exception.
+     50          * @param  None
+     51          * @retval None
+     52          */
+
+   \                                 In section .text, align 2, keep-with-next
+     53          void NMI_Handler(void)
+     54          {   
+     55          }
+   \                     NMI_Handler: (+1)
+   \   00000000   0x4770             BX       LR               ;; return
+     56          
+     57          /**
+     58          * @brief  This function handles Hard Fault exception.
+     59          * @param  None
+     60          * @retval None
+     61          */
+     62          
+
+   \                                 In section .text, align 2, keep-with-next
+     63          void HardFault_Handler(void)
+     64          {
+     65            /* Go to infinite loop when Hard Fault exception occurs */
+     66            while (1)
+     67            {
+     68          //    int a=1;
+     69          //    int b= a+2;
+     70          
+     71              return; //rezaei 
+   \                     HardFault_Handler: (+1)
+   \   00000000   0x4770             BX       LR               ;; return
+     72            }
+     73          }
+     74          
+     75          /**
+     76          * @brief  This function handles Memory Manage exception.
+     77          * @param  None
+     78          * @retval None
+     79          */
+
+   \                                 In section .text, align 2, keep-with-next
+     80          void MemManage_Handler(void)
+     81          {
+     82            /* Go to infinite loop when Memory Manage exception occurs */
+     83            while (1)
+     84            {
+     85              return; //rezaei 
+   \                     MemManage_Handler: (+1)
+   \   00000000   0x4770             BX       LR               ;; return
+     86            }
+     87          }
+     88          
+     89          /**
+     90          * @brief  This function handles Bus Fault exception.
+     91          * @param  None
+     92          * @retval None
+     93          */
+
+   \                                 In section .text, align 2, keep-with-next
+     94          void BusFault_Handler(void)
+     95          {
+     96            /* Go to infinite loop when Bus Fault exception occurs */
+     97            while (1)
+     98            {
+     99              return; //rezaei 
+   \                     BusFault_Handler: (+1)
+   \   00000000   0x4770             BX       LR               ;; return
+    100            }
+    101          }
+    102          
+    103          /**
+    104          * @brief  This function handles Usage Fault exception.
+    105          * @param  None
+    106          * @retval None
+    107          */
+
+   \                                 In section .text, align 2, keep-with-next
+    108          void UsageFault_Handler(void)
+    109          {
+    110            /* Go to infinite loop when Usage Fault exception occurs */
+    111            while (1)
+    112            {
+    113              return; //rezaei 
+   \                     UsageFault_Handler: (+1)
+   \   00000000   0x4770             BX       LR               ;; return
+    114            }
+    115          }
+    116          
+    117          /**
+    118          * @brief  This function handles SVCall exception.
+    119          * @param  None
+    120          * @retval None
+    121          */
+
+   \                                 In section .text, align 2, keep-with-next
+    122          void SVC_Handler(void)
+    123          {
+    124          }
+   \                     SVC_Handler: (+1)
+   \   00000000   0x4770             BX       LR               ;; return
+    125          
+    126          /**
+    127          * @brief  This function handles Debug Monitor exception.
+    128          * @param  None
+    129          * @retval None
+    130          */
+
+   \                                 In section .text, align 2, keep-with-next
+    131          void DebugMon_Handler(void)
+    132          {
+    133          }
+   \                     DebugMon_Handler: (+1)
+   \   00000000   0x4770             BX       LR               ;; return
+    134          
+    135          /**
+    136          * @brief  This function handles PendSVC exception.
+    137          * @param  None
+    138          * @retval None
+    139          */
+
+   \                                 In section .text, align 2, keep-with-next
+    140          void PendSV_Handler(void)
+    141          {
+    142          }
+   \                     PendSV_Handler: (+1)
+   \   00000000   0x4770             BX       LR               ;; return
+    143          
+    144          /**
+    145          * @brief  This function handles SysTick Handler.
+    146          * @param  None
+    147          * @retval None
+    148          */
+
+   \                                 In section .text, align 2, keep-with-next
+    149          void SysTick_Handler(void)
+    150          {
+    151            //TimingDelay_Decrement();
+    152          }
+   \                     SysTick_Handler: (+1)
+   \   00000000   0x4770             BX       LR               ;; return
+    153          
+    154          /******************************************************************************/
+    155          /*                 STM32F4xx Peripherals Interrupt Handlers                   */
+    156          /*  Add here the Interrupt Handler for the used peripheral(s) (PPP), for the  */
+    157          /*  available peripheral interrupt handler's name please refer to the startup */
+    158          /*  file (startup_stm32f4xx.s).                                               */
+    159          /******************************************************************************/
+    160          
+    161          /**
+    162          * @brief  This function handles PPP interrupt request.
+    163          * @param  None
+    164          * @retval None
+    165          */
+    166          /*void PPP_IRQHandler(void)
+    167          {
+    168          }*/
+    169          
+    170          /**
+    171          * @}
+    172          */ 
+    173          /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
+
+   Maximum stack usage in bytes:
+
+   .cstack Function
+   ------- --------
+       0   BusFault_Handler
+       0   DebugMon_Handler
+       0   HardFault_Handler
+       0   MemManage_Handler
+       0   NMI_Handler
+       0   PendSV_Handler
+       0   SVC_Handler
+       0   SysTick_Handler
+       0   UsageFault_Handler
+
+
+   Section sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+       2  BusFault_Handler
+       2  DebugMon_Handler
+       2  HardFault_Handler
+       2  MemManage_Handler
+       2  NMI_Handler
+       2  PendSV_Handler
+       2  SVC_Handler
+       2  SysTick_Handler
+       2  UsageFault_Handler
+
+ 
+ 18 bytes in section .text
+ 
+ 18 bytes of CODE memory
+
+Errors: none
+Warnings: none

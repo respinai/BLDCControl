@@ -1,0 +1,2343 @@
+###############################################################################
+#
+# IAR ANSI C/C++ Compiler V7.40.3.8902/W32 for ARM        01/Aug/2020  12:26:01
+# Copyright 1999-2015 IAR Systems AB.
+#
+#    Cpu mode     =  thumb
+#    Endian       =  little
+#    Source file  =  
+#        E:\Ventilator\SoftWare\SVC_Software\SVC_Ver\MAIN Version\SVC2_8_07
+#        (990511) INH TSI-SEN\modules\Source\Flow_TSI_2.c
+#    Command line =  
+#        "E:\Ventilator\SoftWare\SVC_Software\SVC_Ver\MAIN Version\SVC2_8_07
+#        (990511) INH TSI-SEN\modules\Source\Flow_TSI_2.c" -D
+#        USE_STDPERIPH_DRIVER -D STM32F40XX -lC
+#        "E:\Ventilator\SoftWare\SVC_Software\SVC_Ver\MAIN Version\SVC2_8_07
+#        (990511) INH TSI-SEN\Debug\List\" -o
+#        "E:\Ventilator\SoftWare\SVC_Software\SVC_Ver\MAIN Version\SVC2_8_07
+#        (990511) INH TSI-SEN\Debug\Obj\" --no_cse --no_unroll --no_inline
+#        --no_code_motion --no_tbaa --no_clustering --no_scheduling --debug
+#        --endian=little --cpu=Cortex-M4 -e --fpu=VFPv4_sp --dlib_config
+#        "C:\Program Files (x86)\IAR Systems\Embedded Workbench
+#        7.2\arm\INC\c\DLib_Config_Normal.h" -I
+#        "E:\Ventilator\SoftWare\SVC_Software\SVC_Ver\MAIN Version\SVC2_8_07
+#        (990511) INH TSI-SEN\board\" -I
+#        "E:\Ventilator\SoftWare\SVC_Software\SVC_Ver\MAIN Version\SVC2_8_07
+#        (990511) INH TSI-SEN\app\" -I
+#        "E:\Ventilator\SoftWare\SVC_Software\SVC_Ver\MAIN Version\SVC2_8_07
+#        (990511) INH TSI-SEN\Libraries\CMSIS\Device\ST\STM32F4xx\Include\" -I
+#        "E:\Ventilator\SoftWare\SVC_Software\SVC_Ver\MAIN Version\SVC2_8_07
+#        (990511) INH TSI-SEN\Libraries\STM32F4xx_StdPeriph_Driver\inc\" -I
+#        "E:\Ventilator\SoftWare\SVC_Software\SVC_Ver\MAIN Version\SVC2_8_07
+#        (990511) INH TSI-SEN\modules\Header\" -On --use_c++_inline -I
+#        "C:\Program Files (x86)\IAR Systems\Embedded Workbench
+#        7.2\arm\CMSIS\Include\" --relaxed_fp
+#    List file    =  
+#        E:\Ventilator\SoftWare\SVC_Software\SVC_Ver\MAIN Version\SVC2_8_07
+#        (990511) INH TSI-SEN\Debug\List\Flow_TSI_2.lst
+#    Object file  =  
+#        E:\Ventilator\SoftWare\SVC_Software\SVC_Ver\MAIN Version\SVC2_8_07
+#        (990511) INH TSI-SEN\Debug\Obj\Flow_TSI_2.o
+#
+###############################################################################
+
+E:\Ventilator\SoftWare\SVC_Software\SVC_Ver\MAIN Version\SVC2_8_07 (990511) INH TSI-SEN\modules\Source\Flow_TSI_2.c
+      1          //-----------------------------------------------------------------------------|
+      2          // SAADAT Co 
+      3          // VENTILATOR 
+      4          // DEVELOPER : MOJTABA REZAEI ASHTIYANI
+      5          // VER 1.0
+      6          // This File contains the Set up the flow sensor TSI company which contains :
+      7          // __the coefficients read from memory with I2C communication.
+      8          // __reading the analog value is output.
+      9          //-----------------------------------------------------------------------------|
+     10          
+     11          #include "Flow_TSI_1.h"
+     12          
+     13          //--------------------------------------
+     14          extern          STRUCT_DATA_A2DSENSORS                  DATA_Sensors;
+     15          extern          Struct_FlowSensor_EEPROM_Table          TSI_FlowROM[AIRO2];
+     16          extern 	        Struct_ADCExt_Data                      VA2dExt_Data; 
+     17          
+     18          //--------------------------------------
+     19          extern          u16                                     PWM_Table ,target_output;
+     20          //--------------------------------------
+
+   \                                 In section .bss, align 4
+     21          Struct_FlowSensor_EEPROM_Table      TSI_FlowROM[AIRO2];
+   \                     TSI_FlowROM:
+   \   00000000                      DS8 616
+     22          //-------------------------------------------------------------------------
+
+   \                                 In section .bss, align 2
+     23          u16     TM_I2C_Timeout;
+   \                     TM_I2C_Timeout:
+   \   00000000                      DS8 2
+     24          
+
+   \                                 In section .bss, align 1
+     25          u8      ADD_EErom = 0, BYTE_rom = 0, index1 = 0 , En_ADD = 0;
+   \                     ADD_EErom:
+   \   00000000                      DS8 1
+
+   \                                 In section .bss, align 1
+   \                     BYTE_rom:
+   \   00000000                      DS8 1
+
+   \                                 In section .bss, align 1
+   \                     index1:
+   \   00000000                      DS8 1
+
+   \                                 In section .bss, align 1
+   \                     En_ADD:
+   \   00000000                      DS8 1
+     26          //----------------------------------------------------
+     27          /* Private defines */
+     28          #define I2C_TRANSMITTER_MODE   0
+     29          #define I2C_RECEIVER_MODE      1
+     30          #define I2C_ACK_ENABLE         1
+     31          #define I2C_ACK_DISABLE        0
+     32          #ifndef I2C_TIMEOUT
+     33          #define I2C_TIMEOUT          30000
+     34          #endif
+     35          
+     36          
+     37          u8      I2C_ReadNack(I2C_TypeDef* I2Cx);
+     38          u8      I2C_ReadAck(I2C_TypeDef* I2Cx);
+     39          void    I2C_ReadMulti(I2C_TypeDef* I2Cx, u8 address, u8 reg, u8* data, u16 count);
+     40          void    I2C_WriteData(I2C_TypeDef* I2Cx, u8 data);
+     41          FunctionalState     I2C_Start(I2C_TypeDef* I2Cx, u8 address, u8 direction, u8 ack);
+     42          FunctionalState         I2C_Stop(I2C_TypeDef* I2Cx);
+     43          //-------------------------------------------------------------------------
+     44          
+
+   \                                 In section .rodata, align 4
+     45          const u8 Flow_E2Prom_ADD[Flow_E2Prom_ADD_Len]=
+   \                     Flow_E2Prom_ADD:
+   \   00000000   0x00 0x02          DC8 0, 2, 2, 6, 8, 4, 12, 1, 14, 2, 16, 1, 18, 1, 20, 4, 24, 4, 28, 4
+   \              0x02 0x06    
+   \              0x08 0x04    
+   \              0x0C 0x01    
+   \              0x0E 0x02    
+   \              0x10 0x01    
+   \              0x12 0x01    
+   \              0x14 0x04    
+   \              0x18 0x04    
+   \              0x1C 0x04    
+   \   00000014   0x20 0x04          DC8 32, 4, 36, 4, 40, 4, 44, 1, 46, 2, 48, 1, 50, 2, 52, 1, 54, 2, 56
+   \              0x24 0x04    
+   \              0x28 0x04    
+   \              0x2C 0x01    
+   \              0x2E 0x02    
+   \              0x30 0x01    
+   \              0x32 0x02    
+   \              0x34 0x01    
+   \              0x36 0x02    
+   \              0x38         
+   \   00000027   0x01 0x3A          DC8 1, 58, 2, 0, 1, 2, 4, 6, 4, 10, 4, 14, 4, 18, 4, 22, 4, 26, 4, 30
+   \              0x02 0x00    
+   \              0x01 0x02    
+   \              0x04 0x06    
+   \              0x04 0x0A    
+   \              0x04 0x0E    
+   \              0x04 0x12    
+   \              0x04 0x16    
+   \              0x04 0x1A    
+   \              0x04 0x1E    
+   \   0000003B   0x04 0x22          DC8 4, 34, 16, 50, 16, 66, 16, 82, 16, 98, 16, 114, 16, 130, 16, 146
+   \              0x10 0x32    
+   \              0x10 0x42    
+   \              0x10 0x52    
+   \              0x10 0x62    
+   \              0x10 0x72    
+   \              0x10 0x82    
+   \              0x10 0x92    
+   \   0000004B   0x10 0xA2          DC8 16, 162, 16, 178, 16, 194, 16, 210, 16, 226, 16, 0, 0
+   \              0x10 0xB2    
+   \              0x10 0xC2    
+   \              0x10 0xD2    
+   \              0x10 0xE2    
+   \              0x10 0x00    
+   \              0x00         
+     46          {
+     47              /*Address ,   Bytes	      */
+     48              0		,	2,	//    CRC
+     49              2		,	6,	//	SN
+     50              8		,	4,	//	MN
+     51              12	        ,	1,	//	Rev
+     52              14	        ,	2,	//	Year
+     53              16	        ,	1,	//	Month
+     54              18	        ,	1,	//	Day
+     55              20	        ,	4,	//	Tcal
+     56              24	        ,	4,	//	S
+     57              28	        ,	4,	//	Z	
+     58              32	        ,	4,	//	S2
+     59              36	        ,	4,	//	Z2
+     60              40	        ,	4,	//	Tcorr
+     61              
+     62              44	        ,	1,	//	Cal Air
+     63              46	        ,	2,	//	Location Air
+     64              48	        ,	1,	//	Cal Oxygen (2A)
+     65              50          ,	2,	//	Location	Oxygen
+     66              52	        ,	1,	//	Cal	Heliox
+     67              54	        ,	2,	//	Location Heliox
+     68              56	        ,	1,	//	Cal Gas4	
+     69              58	        ,	2,	//	Location	Gac4
+     70              
+     71              0		,	1,	//	offset (33)
+     72              2		,	4,	//	K0			
+     73              6		,	4,	//	K1			
+     74              10	        ,	4,	//	K2			
+     75              14	        ,	4,	//	K3
+     76              18	        ,	4,	//	L0			
+     77              22	        ,	4,	//	L1			
+     78              26	        ,	4,	//	L2			
+     79              30	        ,	4,	//	L3			
+     80              
+     81              34	        ,	16,	//	VABC[0]
+     82              50	        ,	16,	//	VABC[1]
+     83              66	        ,	16,	//	VABC[2]
+     84              82	        ,	16,	//	VABC[3]
+     85              98	        ,	16,	//	VABC[4]
+     86              114	        ,	16,	//	VABC[5]
+     87              130	        ,	16,	//	VABC[6]
+     88              146	        ,	16,	//	VABC[7]
+     89              162	        ,	16,	//	VABC[8]
+     90              178	        ,	16,	//	VABC[9]
+     91              194	        ,	16,	//	VABC[10]
+     92              210	        ,	16,	//	VABC[11]
+     93              226	        ,	16,	//	VABC[12]
+     94          };
+     95          
+     96          //-------------------------------------------------------------------------------
+
+   \                                 In section .rodata, align 4
+     97          const u16 TempTable[90] = {
+   \                     TempTable:
+   \   00000000   0x598B 0x5914      DC16 22923, 22804, 22681, 22552, 22417, 22277, 22131, 21979, 21821
+   \              0x5899 0x5818
+   \              0x5791 0x5705
+   \              0x5673 0x55DB
+   \              0x553D       
+   \   00000012   0x549A 0x53F0      DC16 21658, 21488, 21312, 21130, 20942, 20748, 20548, 20342, 20129
+   \              0x5340 0x528A
+   \              0x51CE 0x510C
+   \              0x5044 0x4F76
+   \              0x4EA1       
+   \   00000024   0x4DC7 0x4CE7      DC16 19911, 19687, 19457, 19222, 18981, 18734, 18483, 18226, 17934
+   \              0x4C01 0x4B16
+   \              0x4A25 0x492E
+   \              0x4833 0x4732
+   \              0x460E       
+   \   00000036   0x4524 0x4416      DC16 17700, 17430, 17156, 16879, 16598, 16315, 16028, 15739, 15448
+   \              0x4304 0x41EF
+   \              0x40D6 0x3FBB
+   \              0x3E9C 0x3D7B
+   \              0x3C58       
+   \   00000048   0x3B34 0x3A0D      DC16 15156, 14861, 14566, 14270, 13974, 13678, 13382, 13087, 12793
+   \              0x38E6 0x37BE
+   \              0x3696 0x356E
+   \              0x3446 0x331F
+   \              0x31F9       
+   \   0000005A   0x30D4 0x2FB1      DC16 12500, 12209, 11920, 11633, 11348, 11066, 10788, 10512, 10240
+   \              0x2E90 0x2D71
+   \              0x2C54 0x2B3A
+   \              0x2A24 0x2910
+   \              0x2800       
+   \   0000006C   0x26F4 0x25EC      DC16 9972, 9708, 9447, 9191, 8939, 8692, 8449, 8211, 7977, 7749, 7525
+   \              0x24E7 0x23E7
+   \              0x22EB 0x21F4
+   \              0x2101 0x2013
+   \              0x1F29 0x1E45
+   \              0x1D65       
+   \   00000082   0x1C8A 0x1BB4      DC16 7306, 7092, 6883, 6679, 6480, 6286, 6097, 5913, 5733, 5558, 5388
+   \              0x1AE3 0x1A17
+   \              0x1950 0x188E
+   \              0x17D1 0x1719
+   \              0x1665 0x15B6
+   \              0x150C       
+   \   00000098   0x1467 0x13C6      DC16 5223, 5062, 4906, 4754, 4607, 4464, 4325, 4190, 4060, 3933, 3810
+   \              0x132A 0x1292
+   \              0x11FF 0x1170
+   \              0x10E5 0x105E
+   \              0x0FDC 0x0F5D
+   \              0x0EE2       
+   \   000000AE   0x0E6B 0x0DF8      DC16 3691, 3576, 3464
+   \              0x0D88       
+     98              /*-20 ~ -11 */  22923,22804,22681,22552,22417,22277,22131,21979,21821,21658,
+     99              /*-10 ~  -1 */  21488,21312,21130,20942,20748,20548,20342,20129,19911,19687,
+    100              /*  0 ~   9 */  19457,19222,18981,18734,18483,18226,17934,17700,17430,17156,
+    101              /* 10 ~  19 */  16879,16598,16315,16028,15739,15448,15156,14861,14566,14270,
+    102              /* 20 ~  29 */  13974,13678,13382,13087,12793,12500,12209,11920,11633,11348,
+    103              /* 30 ~  39 */  11066,10788,10512,10240, 9972, 9708, 9447, 9191, 8939, 8692,
+    104              /* 40 ~  49 */   8449, 8211, 7977, 7749, 7525, 7306, 7092, 6883, 6679, 6480,
+    105              /* 50 ~  59 */   6286, 6097, 5913, 5733, 5558, 5388, 5223, 5062, 4906, 4754,
+    106              /* 60 ~  69 */   4607, 4464, 4325, 4190, 4060, 3933, 3810, 3691, 3576, 3464
+    107          }; // VOLT * 10000 
+    108          
+    109          ///F= -8.0295*X^5 + 53.128*X^4 - 144.94*X^3 + 205.1*X^2 - 185.02*X+ 113.71
+    110          //----------------------------------------------------------------------------------
+
+   \                                 In section .text, align 2, keep-with-next
+    111          void Flow_TSI_Initialize (I2C_TypeDef* I2Cx)
+    112          {
+   \                     Flow_TSI_Initialize: (+1)
+   \   00000000   0xB510             PUSH     {R4,LR}
+   \   00000002   0xF5AD 0x7D16      SUB      SP,SP,#+600
+   \   00000006   0x0004             MOVS     R4,R0
+    113              u8	  		ReadData[TSI_BUFFREADING_ROM_LEN];
+    114              
+    115              I2C_EE_BufferRead(I2Cx, ReadData, 0, TSI_BUFFREADING_ROM_LEN);
+   \   00000008   0xF44F 0x7316      MOV      R3,#+600
+   \   0000000C   0x2200             MOVS     R2,#+0
+   \   0000000E   0xA900             ADD      R1,SP,#+0
+   \   00000010   0x0020             MOVS     R0,R4
+   \   00000012   0x.... 0x....      BL       I2C_EE_BufferRead
+    116              
+    117              if(I2Cx == FLOWSENSOR_AIR )
+   \   00000016   0x.... 0x....      LDR.W    R0,??DataTable6_2  ;; 0x40005400
+   \   0000001A   0x4284             CMP      R4,R0
+   \   0000001C   0xD12A             BNE.N    ??Flow_TSI_Initialize_0
+    118              {
+    119                  DATA_Sensors.Air_TSISN[0]=TSI_FlowROM[AIR].Data.SN[0];
+   \   0000001E   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   00000022   0x7880             LDRB     R0,[R0, #+2]
+   \   00000024   0x.... 0x....      LDR.W    R1,??DataTable8
+   \   00000028   0xF881 0x0040      STRB     R0,[R1, #+64]
+    120                  DATA_Sensors.Air_TSISN[1]=TSI_FlowROM[AIR].Data.SN[1];
+   \   0000002C   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   00000030   0x78C0             LDRB     R0,[R0, #+3]
+   \   00000032   0x.... 0x....      LDR.W    R1,??DataTable8
+   \   00000036   0xF881 0x0041      STRB     R0,[R1, #+65]
+    121                  DATA_Sensors.Air_TSISN[2]=TSI_FlowROM[AIR].Data.SN[2];
+   \   0000003A   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   0000003E   0x7900             LDRB     R0,[R0, #+4]
+   \   00000040   0x.... 0x....      LDR.W    R1,??DataTable8
+   \   00000044   0xF881 0x0042      STRB     R0,[R1, #+66]
+    122                  DATA_Sensors.Air_TSISN[3]=TSI_FlowROM[AIR].Data.SN[3];
+   \   00000048   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   0000004C   0x7940             LDRB     R0,[R0, #+5]
+   \   0000004E   0x.... 0x....      LDR.W    R1,??DataTable8
+   \   00000052   0xF881 0x0043      STRB     R0,[R1, #+67]
+    123                  DATA_Sensors.Air_TSISN[4]=TSI_FlowROM[AIR].Data.SN[4];
+   \   00000056   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   0000005A   0x7980             LDRB     R0,[R0, #+6]
+   \   0000005C   0x.... 0x....      LDR.W    R1,??DataTable8
+   \   00000060   0xF881 0x0044      STRB     R0,[R1, #+68]
+    124                  DATA_Sensors.Air_TSISN[5]=TSI_FlowROM[AIR].Data.SN[5]; 
+   \   00000064   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   00000068   0x79C0             LDRB     R0,[R0, #+7]
+   \   0000006A   0x.... 0x....      LDR.W    R1,??DataTable8
+   \   0000006E   0xF881 0x0045      STRB     R0,[R1, #+69]
+   \   00000072   0xE033             B.N      ??Flow_TSI_Initialize_1
+    125              }
+    126              else if(I2Cx == FLOWSENSOR_O2 )
+   \                     ??Flow_TSI_Initialize_0: (+1)
+   \   00000074   0x.... 0x....      LDR.W    R0,??DataTable6_4  ;; 0x40005800
+   \   00000078   0x4284             CMP      R4,R0
+   \   0000007A   0xD12F             BNE.N    ??Flow_TSI_Initialize_1
+    127              {
+    128                  DATA_Sensors.O2_TSISN[0]=TSI_FlowROM[O2].Data.SN[0];
+   \   0000007C   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   00000080   0xF890 0x0135      LDRB     R0,[R0, #+309]
+   \   00000084   0x.... 0x....      LDR.W    R1,??DataTable8
+   \   00000088   0xF881 0x0046      STRB     R0,[R1, #+70]
+    129                  DATA_Sensors.O2_TSISN[1]=TSI_FlowROM[O2].Data.SN[1];
+   \   0000008C   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   00000090   0xF890 0x0136      LDRB     R0,[R0, #+310]
+   \   00000094   0x.... 0x....      LDR.W    R1,??DataTable8
+   \   00000098   0xF881 0x0047      STRB     R0,[R1, #+71]
+    130                  DATA_Sensors.O2_TSISN[2]=TSI_FlowROM[O2].Data.SN[2];
+   \   0000009C   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   000000A0   0xF890 0x0137      LDRB     R0,[R0, #+311]
+   \   000000A4   0x.... 0x....      LDR.W    R1,??DataTable8
+   \   000000A8   0xF881 0x0048      STRB     R0,[R1, #+72]
+    131                  DATA_Sensors.O2_TSISN[3]=TSI_FlowROM[O2].Data.SN[3];
+   \   000000AC   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   000000B0   0xF890 0x0138      LDRB     R0,[R0, #+312]
+   \   000000B4   0x.... 0x....      LDR.W    R1,??DataTable8
+   \   000000B8   0xF881 0x0049      STRB     R0,[R1, #+73]
+    132                  DATA_Sensors.O2_TSISN[4]=TSI_FlowROM[O2].Data.SN[4];
+   \   000000BC   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   000000C0   0xF890 0x0139      LDRB     R0,[R0, #+313]
+   \   000000C4   0x.... 0x....      LDR.W    R1,??DataTable8
+   \   000000C8   0xF881 0x004A      STRB     R0,[R1, #+74]
+    133                  DATA_Sensors.O2_TSISN[5]=TSI_FlowROM[O2].Data.SN[5]; 
+   \   000000CC   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   000000D0   0xF890 0x013A      LDRB     R0,[R0, #+314]
+   \   000000D4   0x.... 0x....      LDR.W    R1,??DataTable8
+   \   000000D8   0xF881 0x004B      STRB     R0,[R1, #+75]
+    134              }
+    135          
+    136              
+    137          }
+   \                     ??Flow_TSI_Initialize_1: (+1)
+   \   000000DC   0xF50D 0x7D16      ADD      SP,SP,#+600
+   \   000000E0   0xBD10             POP      {R4,PC}          ;; return
+    138          //---------------------------------------------
+
+   \                                 In section .text, align 2, keep-with-next
+    139          void I2C_EE_BufferRead(I2C_TypeDef* I2Cx, u8* pBuffer, u16 ReadAddr, u16 NumByteToRead)
+    140          {  
+   \                     I2C_EE_BufferRead: (+1)
+   \   00000000   0xE92D 0x4FF8      PUSH     {R3-R11,LR}
+   \   00000004   0x0004             MOVS     R4,R0
+   \   00000006   0x000D             MOVS     R5,R1
+   \   00000008   0x0016             MOVS     R6,R2
+   \   0000000A   0x001F             MOVS     R7,R3
+    141              u16         Index_CNT = 0;
+   \   0000000C   0xF05F 0x0800      MOVS     R8,#+0
+    142              u16         TmepData;
+    143              u8		*ptr_eeprom;
+    144              u8		TypeAirO2 ;
+    145              
+    146              if(I2Cx == FLOWSENSOR_AIR )
+   \   00000010   0x.... 0x....      LDR.W    R0,??DataTable6_2  ;; 0x40005400
+   \   00000014   0x4284             CMP      R4,R0
+   \   00000016   0xD102             BNE.N    ??I2C_EE_BufferRead_0
+    147                  TypeAirO2 = AIR;
+   \   00000018   0x2000             MOVS     R0,#+0
+   \   0000001A   0x4683             MOV      R11,R0
+   \   0000001C   0xE001             B.N      ??I2C_EE_BufferRead_1
+    148              else
+    149                  TypeAirO2 = O2;
+   \                     ??I2C_EE_BufferRead_0: (+1)
+   \   0000001E   0x2001             MOVS     R0,#+1
+   \   00000020   0x4683             MOV      R11,R0
+    150              ptr_eeprom = (u8*)&TSI_FlowROM[TypeAirO2].Data;
+   \                     ??I2C_EE_BufferRead_1: (+1)
+   \   00000022   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   00000026   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   0000002A   0xF240 0x1133      MOVW     R1,#+307
+   \   0000002E   0xFB01 0x000B      MLA      R0,R1,R11,R0
+   \   00000032   0x4682             MOV      R10,R0
+    151              //.....................................................
+    152              I2C_ReadMulti( I2Cx, 0xA0, 0 , pBuffer, NumByteToRead); 
+   \   00000034   0x0038             MOVS     R0,R7
+   \   00000036   0xB280             UXTH     R0,R0            ;; ZeroExt  R0,R0,#+16,#+16
+   \   00000038   0x9000             STR      R0,[SP, #+0]
+   \   0000003A   0x002B             MOVS     R3,R5
+   \   0000003C   0x2200             MOVS     R2,#+0
+   \   0000003E   0x21A0             MOVS     R1,#+160
+   \   00000040   0x0020             MOVS     R0,R4
+   \   00000042   0x.... 0x....      BL       I2C_ReadMulti
+    153              
+    154              while(NumByteToRead)  
+   \                     ??I2C_EE_BufferRead_2: (+1)
+   \   00000046   0xB2BF             UXTH     R7,R7            ;; ZeroExt  R7,R7,#+16,#+16
+   \   00000048   0x2F00             CMP      R7,#+0
+   \   0000004A   0xF000 0x818F      BEQ.W    ??I2C_EE_BufferRead_3
+    155              {
+    156                  TmepData = pBuffer[Index_CNT++];
+   \   0000004E   0xFA1F 0xF888      UXTH     R8,R8            ;; ZeroExt  R8,R8,#+16,#+16
+   \   00000052   0xF818 0x0005      LDRB     R0,[R8, R5]
+   \   00000056   0x4681             MOV      R9,R0
+   \   00000058   0xF118 0x0801      ADDS     R8,R8,#+1
+    157                  /* Calculation CRC */			
+    158                  
+    159                  if(((Flow_E2Prom_ADD[TSI_FlowROM[TypeAirO2].Control.Index ] + TSI_FlowROM[TypeAirO2].Control.Offset) == TSI_FlowROM[TypeAirO2].Control.cnt) || (TSI_FlowROM[TypeAirO2].Control.Flg_loop == TRUE))
+   \   0000005C   0x.... 0x....      LDR.W    R0,??DataTable8_1
+   \   00000060   0x.... 0x....      LDR.W    R1,??DataTable6_3
+   \   00000064   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   00000068   0xF240 0x1233      MOVW     R2,#+307
+   \   0000006C   0xFB02 0x110B      MLA      R1,R2,R11,R1
+   \   00000070   0xF8B1 0x1128      LDRH     R1,[R1, #+296]
+   \   00000074   0x5C08             LDRB     R0,[R1, R0]
+   \   00000076   0x.... 0x....      LDR.W    R1,??DataTable6_3
+   \   0000007A   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   0000007E   0xF240 0x1233      MOVW     R2,#+307
+   \   00000082   0xFB02 0x110B      MLA      R1,R2,R11,R1
+   \   00000086   0xF8B1 0x1131      LDRH     R1,[R1, #+305]
+   \   0000008A   0x1808             ADDS     R0,R1,R0
+   \   0000008C   0x.... 0x....      LDR.W    R1,??DataTable6_3
+   \   00000090   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   00000094   0xF240 0x1233      MOVW     R2,#+307
+   \   00000098   0xFB02 0x110B      MLA      R1,R2,R11,R1
+   \   0000009C   0xF8B1 0x112F      LDRH     R1,[R1, #+303]
+   \   000000A0   0x4288             CMP      R0,R1
+   \   000000A2   0xD00C             BEQ.N    ??I2C_EE_BufferRead_4
+   \   000000A4   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   000000A8   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   000000AC   0xF240 0x1133      MOVW     R1,#+307
+   \   000000B0   0xFB01 0x000B      MLA      R0,R1,R11,R0
+   \   000000B4   0xF890 0x012E      LDRB     R0,[R0, #+302]
+   \   000000B8   0x2801             CMP      R0,#+1
+   \   000000BA   0xF040 0x80B2      BNE.W    ??I2C_EE_BufferRead_5
+    160                  {
+    161                      if(!TSI_FlowROM[TypeAirO2].Control.Flg_loop)
+   \                     ??I2C_EE_BufferRead_4: (+1)
+   \   000000BE   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   000000C2   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   000000C6   0xF240 0x1133      MOVW     R1,#+307
+   \   000000CA   0xFB01 0x000B      MLA      R0,R1,R11,R0
+   \   000000CE   0xF890 0x012E      LDRB     R0,[R0, #+302]
+   \   000000D2   0x2800             CMP      R0,#+0
+   \   000000D4   0xD14A             BNE.N    ??I2C_EE_BufferRead_6
+    162                      {
+    163                          TSI_FlowROM[TypeAirO2].Control.Flg_loop = TRUE;
+   \   000000D6   0x2001             MOVS     R0,#+1
+   \   000000D8   0x.... 0x....      LDR.W    R1,??DataTable6_3
+   \   000000DC   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   000000E0   0xF240 0x1233      MOVW     R2,#+307
+   \   000000E4   0xFB02 0x110B      MLA      R1,R2,R11,R1
+   \   000000E8   0xF881 0x012E      STRB     R0,[R1, #+302]
+    164                          TSI_FlowROM[TypeAirO2].Control.Index++;
+   \   000000EC   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   000000F0   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   000000F4   0xF240 0x1133      MOVW     R1,#+307
+   \   000000F8   0xFB01 0x000B      MLA      R0,R1,R11,R0
+   \   000000FC   0xF8B0 0x0128      LDRH     R0,[R0, #+296]
+   \   00000100   0x1C40             ADDS     R0,R0,#+1
+   \   00000102   0x.... 0x....      LDR.W    R1,??DataTable6_3
+   \   00000106   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   0000010A   0xF240 0x1233      MOVW     R2,#+307
+   \   0000010E   0xFB02 0x110B      MLA      R1,R2,R11,R1
+   \   00000112   0xF8A1 0x0128      STRH     R0,[R1, #+296]
+    165                          TSI_FlowROM[TypeAirO2].Control.Len = Flow_E2Prom_ADD[TSI_FlowROM[TypeAirO2].Control.Index];
+   \   00000116   0x.... 0x....      LDR.W    R0,??DataTable8_1
+   \   0000011A   0x.... 0x....      LDR.W    R1,??DataTable6_3
+   \   0000011E   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   00000122   0xF240 0x1233      MOVW     R2,#+307
+   \   00000126   0xFB02 0x110B      MLA      R1,R2,R11,R1
+   \   0000012A   0xF8B1 0x1128      LDRH     R1,[R1, #+296]
+   \   0000012E   0x5C08             LDRB     R0,[R1, R0]
+   \   00000130   0x.... 0x....      LDR.W    R1,??DataTable6_3
+   \   00000134   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   00000138   0xF240 0x1233      MOVW     R2,#+307
+   \   0000013C   0xFB02 0x110B      MLA      R1,R2,R11,R1
+   \   00000140   0xF8A1 0x012A      STRH     R0,[R1, #+298]
+    166                          TSI_FlowROM[TypeAirO2].Control.Len_cpy = TSI_FlowROM[TypeAirO2].Control.Len;
+   \   00000144   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   00000148   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   0000014C   0xF240 0x1133      MOVW     R1,#+307
+   \   00000150   0xFB01 0x000B      MLA      R0,R1,R11,R0
+   \   00000154   0xF8B0 0x012A      LDRH     R0,[R0, #+298]
+   \   00000158   0x.... 0x....      LDR.W    R1,??DataTable6_3
+   \   0000015C   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   00000160   0xF240 0x1233      MOVW     R2,#+307
+   \   00000164   0xFB02 0x110B      MLA      R1,R2,R11,R1
+   \   00000168   0xF8A1 0x012C      STRH     R0,[R1, #+300]
+    167                      }
+    168                      *(ptr_eeprom + TSI_FlowROM[TypeAirO2].Control.Len - 1) = TmepData;
+   \                     ??I2C_EE_BufferRead_6: (+1)
+   \   0000016C   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   00000170   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   00000174   0xF240 0x1133      MOVW     R1,#+307
+   \   00000178   0xFB01 0x000B      MLA      R0,R1,R11,R0
+   \   0000017C   0xF8B0 0x012A      LDRH     R0,[R0, #+298]
+   \   00000180   0xEB10 0x000A      ADDS     R0,R0,R10
+   \   00000184   0xF800 0x9C01      STRB     R9,[R0, #-1]
+    169                      //CRC_Calculation(TmepData);
+    170                      TSI_FlowROM[TypeAirO2].Control.Len--;
+   \   00000188   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   0000018C   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   00000190   0xF240 0x1133      MOVW     R1,#+307
+   \   00000194   0xFB01 0x000B      MLA      R0,R1,R11,R0
+   \   00000198   0xF8B0 0x012A      LDRH     R0,[R0, #+298]
+   \   0000019C   0x1E40             SUBS     R0,R0,#+1
+   \   0000019E   0x.... 0x....      LDR.W    R1,??DataTable6_3
+   \   000001A2   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   000001A6   0xF240 0x1233      MOVW     R2,#+307
+   \   000001AA   0xFB02 0x110B      MLA      R1,R2,R11,R1
+   \   000001AE   0xF8A1 0x012A      STRH     R0,[R1, #+298]
+    171                      if(TSI_FlowROM[TypeAirO2].Control.Len == 0)
+   \   000001B2   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   000001B6   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   000001BA   0xF240 0x1133      MOVW     R1,#+307
+   \   000001BE   0xFB01 0x000B      MLA      R0,R1,R11,R0
+   \   000001C2   0xF8B0 0x012A      LDRH     R0,[R0, #+298]
+   \   000001C6   0x2800             CMP      R0,#+0
+   \   000001C8   0xD12B             BNE.N    ??I2C_EE_BufferRead_5
+    172                      {
+    173                          TSI_FlowROM[TypeAirO2].Control.Flg_loop =FALSE;
+   \   000001CA   0x2000             MOVS     R0,#+0
+   \   000001CC   0x.... 0x....      LDR.W    R1,??DataTable6_3
+   \   000001D0   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   000001D4   0xF240 0x1233      MOVW     R2,#+307
+   \   000001D8   0xFB02 0x110B      MLA      R1,R2,R11,R1
+   \   000001DC   0xF881 0x012E      STRB     R0,[R1, #+302]
+    174                          TSI_FlowROM[TypeAirO2].Control.Index++;
+   \   000001E0   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   000001E4   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   000001E8   0xF240 0x1133      MOVW     R1,#+307
+   \   000001EC   0xFB01 0x000B      MLA      R0,R1,R11,R0
+   \   000001F0   0xF8B0 0x0128      LDRH     R0,[R0, #+296]
+   \   000001F4   0x1C40             ADDS     R0,R0,#+1
+   \   000001F6   0x.... 0x....      LDR.W    R1,??DataTable6_3
+   \   000001FA   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   000001FE   0xF240 0x1233      MOVW     R2,#+307
+   \   00000202   0xFB02 0x110B      MLA      R1,R2,R11,R1
+   \   00000206   0xF8A1 0x0128      STRH     R0,[R1, #+296]
+    175                          ptr_eeprom += TSI_FlowROM[TypeAirO2].Control.Len_cpy;
+   \   0000020A   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   0000020E   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   00000212   0xF240 0x1133      MOVW     R1,#+307
+   \   00000216   0xFB01 0x000B      MLA      R0,R1,R11,R0
+   \   0000021A   0xF8B0 0x012C      LDRH     R0,[R0, #+300]
+   \   0000021E   0xEB10 0x0A0A      ADDS     R10,R0,R10
+    176                      }
+    177                  }	
+    178                  TSI_FlowROM[TypeAirO2].Control.cnt ++;
+   \                     ??I2C_EE_BufferRead_5: (+1)
+   \   00000222   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   00000226   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   0000022A   0xF240 0x1133      MOVW     R1,#+307
+   \   0000022E   0xFB01 0x000B      MLA      R0,R1,R11,R0
+   \   00000232   0xF8B0 0x012F      LDRH     R0,[R0, #+303]
+   \   00000236   0x1C40             ADDS     R0,R0,#+1
+   \   00000238   0x.... 0x....      LDR.W    R1,??DataTable6_3
+   \   0000023C   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   00000240   0xF240 0x1233      MOVW     R2,#+307
+   \   00000244   0xFB02 0x110B      MLA      R1,R2,R11,R1
+   \   00000248   0xF8A1 0x012F      STRH     R0,[R1, #+303]
+    179                  if(TSI_FlowROM[TypeAirO2].Control.cnt == CHECK_ADD)
+   \   0000024C   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   00000250   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   00000254   0xF240 0x1133      MOVW     R1,#+307
+   \   00000258   0xFB01 0x000B      MLA      R0,R1,R11,R0
+   \   0000025C   0xF8B0 0x012F      LDRH     R0,[R0, #+303]
+   \   00000260   0x283C             CMP      R0,#+60
+   \   00000262   0xF040 0x8081      BNE.W    ??I2C_EE_BufferRead_7
+    180                  {
+    181                      if(TSI_FlowROM[TypeAirO2].Data.CalAIR == 0x01)
+   \   00000266   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   0000026A   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   0000026E   0xF240 0x1133      MOVW     R1,#+307
+   \   00000272   0xFB01 0x000B      MLA      R0,R1,R11,R0
+   \   00000276   0xF890 0x0029      LDRB     R0,[R0, #+41]
+   \   0000027A   0x2801             CMP      R0,#+1
+   \   0000027C   0xD113             BNE.N    ??I2C_EE_BufferRead_8
+    182                      {
+    183                          TSI_FlowROM[TypeAirO2].Control.Offset = TSI_FlowROM[TypeAirO2].Data.LocationAIR;
+   \   0000027E   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   00000282   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   00000286   0xF240 0x1133      MOVW     R1,#+307
+   \   0000028A   0xFB01 0x000B      MLA      R0,R1,R11,R0
+   \   0000028E   0x8D40             LDRH     R0,[R0, #+42]
+   \   00000290   0x.... 0x....      LDR.W    R1,??DataTable6_3
+   \   00000294   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   00000298   0xF240 0x1233      MOVW     R2,#+307
+   \   0000029C   0xFB02 0x110B      MLA      R1,R2,R11,R1
+   \   000002A0   0xF8A1 0x0131      STRH     R0,[R1, #+305]
+   \   000002A4   0xE060             B.N      ??I2C_EE_BufferRead_7
+    184                      }
+    185                      else if(TSI_FlowROM[TypeAirO2].Data.CalO2 == 0x01)
+   \                     ??I2C_EE_BufferRead_8: (+1)
+   \   000002A6   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   000002AA   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   000002AE   0xF240 0x1133      MOVW     R1,#+307
+   \   000002B2   0xFB01 0x000B      MLA      R0,R1,R11,R0
+   \   000002B6   0xF890 0x002C      LDRB     R0,[R0, #+44]
+   \   000002BA   0x2801             CMP      R0,#+1
+   \   000002BC   0xD114             BNE.N    ??I2C_EE_BufferRead_9
+    186                      {
+    187                          TSI_FlowROM[TypeAirO2].Control.Offset = TSI_FlowROM[TypeAirO2].Data.LocationO2;
+   \   000002BE   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   000002C2   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   000002C6   0xF240 0x1133      MOVW     R1,#+307
+   \   000002CA   0xFB01 0x000B      MLA      R0,R1,R11,R0
+   \   000002CE   0xF8B0 0x002D      LDRH     R0,[R0, #+45]
+   \   000002D2   0x.... 0x....      LDR.W    R1,??DataTable6_3
+   \   000002D6   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   000002DA   0xF240 0x1233      MOVW     R2,#+307
+   \   000002DE   0xFB02 0x110B      MLA      R1,R2,R11,R1
+   \   000002E2   0xF8A1 0x0131      STRH     R0,[R1, #+305]
+   \   000002E6   0xE03F             B.N      ??I2C_EE_BufferRead_7
+    188                      }
+    189                      else if(TSI_FlowROM[TypeAirO2].Data.CalHLX == 0x01)
+   \                     ??I2C_EE_BufferRead_9: (+1)
+   \   000002E8   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   000002EC   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   000002F0   0xF240 0x1133      MOVW     R1,#+307
+   \   000002F4   0xFB01 0x000B      MLA      R0,R1,R11,R0
+   \   000002F8   0xF890 0x002F      LDRB     R0,[R0, #+47]
+   \   000002FC   0x2801             CMP      R0,#+1
+   \   000002FE   0xD113             BNE.N    ??I2C_EE_BufferRead_10
+    190                      {
+    191                          TSI_FlowROM[TypeAirO2].Control.Offset = TSI_FlowROM[TypeAirO2].Data.LocationHLX;
+   \   00000300   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   00000304   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   00000308   0xF240 0x1133      MOVW     R1,#+307
+   \   0000030C   0xFB01 0x000B      MLA      R0,R1,R11,R0
+   \   00000310   0x8E00             LDRH     R0,[R0, #+48]
+   \   00000312   0x.... 0x....      LDR.W    R1,??DataTable6_3
+   \   00000316   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   0000031A   0xF240 0x1233      MOVW     R2,#+307
+   \   0000031E   0xFB02 0x110B      MLA      R1,R2,R11,R1
+   \   00000322   0xF8A1 0x0131      STRH     R0,[R1, #+305]
+   \   00000326   0xE01F             B.N      ??I2C_EE_BufferRead_7
+    192                      }
+    193                      else if(TSI_FlowROM[TypeAirO2].Data.CalGAS == 0x01)
+   \                     ??I2C_EE_BufferRead_10: (+1)
+   \   00000328   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   0000032C   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   00000330   0xF240 0x1133      MOVW     R1,#+307
+   \   00000334   0xFB01 0x000B      MLA      R0,R1,R11,R0
+   \   00000338   0xF890 0x0032      LDRB     R0,[R0, #+50]
+   \   0000033C   0x2801             CMP      R0,#+1
+   \   0000033E   0xD113             BNE.N    ??I2C_EE_BufferRead_7
+    194                      {
+    195                          TSI_FlowROM[TypeAirO2].Control.Offset = TSI_FlowROM[TypeAirO2].Data.LocationGAS;
+   \   00000340   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   00000344   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   00000348   0xF240 0x1133      MOVW     R1,#+307
+   \   0000034C   0xFB01 0x000B      MLA      R0,R1,R11,R0
+   \   00000350   0xF8B0 0x0033      LDRH     R0,[R0, #+51]
+   \   00000354   0x.... 0x....      LDR.W    R1,??DataTable6_3
+   \   00000358   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   0000035C   0xF240 0x1233      MOVW     R2,#+307
+   \   00000360   0xFB02 0x110B      MLA      R1,R2,R11,R1
+   \   00000364   0xF8A1 0x0131      STRH     R0,[R1, #+305]
+    196                      }
+    197                      else
+    198                      {
+    199                          // Error & SET  coefficiont
+    200                      }
+    201                  }    
+    202                  
+    203                  NumByteToRead--; //  
+   \                     ??I2C_EE_BufferRead_7: (+1)
+   \   00000368   0x1E7F             SUBS     R7,R7,#+1
+   \   0000036A   0xE66C             B.N      ??I2C_EE_BufferRead_2
+    204                  
+    205              } // While
+    206              
+    207              
+    208              
+    209              
+    210              if( TypeAirO2 == AIR)
+   \                     ??I2C_EE_BufferRead_3: (+1)
+   \   0000036C   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   00000370   0xF1BB 0x0F00      CMP      R11,#+0
+   \   00000374   0xD13D             BNE.N    ??I2C_EE_BufferRead_11
+    211              {
+    212                  if(TSI_FlowROM[TypeAirO2].Data.MN == 840521)
+   \   00000376   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   0000037A   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   0000037E   0xF240 0x1133      MOVW     R1,#+307
+   \   00000382   0xFB01 0x000B      MLA      R0,R1,R11,R0
+   \   00000386   0x6880             LDR      R0,[R0, #+8]
+   \   00000388   0x.... 0x....      LDR.W    R1,??DataTable8_2  ;; 0xcd349
+   \   0000038C   0x4288             CMP      R0,R1
+   \   0000038E   0xD109             BNE.N    ??I2C_EE_BufferRead_12
+    213                      DATA_Sensors.HWErr.TSIASSEMAIR = FALSE; 
+   \   00000390   0x.... 0x....      LDR.W    R0,??DataTable8
+   \   00000394   0x8FC0             LDRH     R0,[R0, #+62]
+   \   00000396   0xF64F 0x71FD      MOVW     R1,#+65533
+   \   0000039A   0x4008             ANDS     R0,R1,R0
+   \   0000039C   0x.... 0x....      LDR.W    R1,??DataTable8
+   \   000003A0   0x87C8             STRH     R0,[R1, #+62]
+   \   000003A2   0xE007             B.N      ??I2C_EE_BufferRead_13
+    214                  else
+    215                      DATA_Sensors.HWErr.TSIASSEMAIR = TRUE;
+   \                     ??I2C_EE_BufferRead_12: (+1)
+   \   000003A4   0x.... 0x....      LDR.W    R0,??DataTable8
+   \   000003A8   0x8FC0             LDRH     R0,[R0, #+62]
+   \   000003AA   0xF050 0x0002      ORRS     R0,R0,#0x2
+   \   000003AE   0x.... 0x....      LDR.W    R1,??DataTable8
+   \   000003B2   0x87C8             STRH     R0,[R1, #+62]
+    216                  
+    217                  if(TSI_FlowROM[TypeAirO2].Control.Index >= Flow_E2Prom_ADD_Len)
+   \                     ??I2C_EE_BufferRead_13: (+1)
+   \   000003B4   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   000003B8   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   000003BC   0xF240 0x1133      MOVW     R1,#+307
+   \   000003C0   0xFB01 0x000B      MLA      R0,R1,R11,R0
+   \   000003C4   0xF8B0 0x0128      LDRH     R0,[R0, #+296]
+   \   000003C8   0x2856             CMP      R0,#+86
+   \   000003CA   0xDB09             BLT.N    ??I2C_EE_BufferRead_14
+    218                      DATA_Sensors.HWErr.TSIROMAIR = FALSE;
+   \   000003CC   0x.... 0x....      LDR.W    R0,??DataTable8
+   \   000003D0   0x8FC0             LDRH     R0,[R0, #+62]
+   \   000003D2   0xF64F 0x71FE      MOVW     R1,#+65534
+   \   000003D6   0x4008             ANDS     R0,R1,R0
+   \   000003D8   0x.... 0x....      LDR.W    R1,??DataTable8
+   \   000003DC   0x87C8             STRH     R0,[R1, #+62]
+   \   000003DE   0xE04A             B.N      ??I2C_EE_BufferRead_15
+    219                  else
+    220                      DATA_Sensors.HWErr.TSIROMAIR = TRUE;
+   \                     ??I2C_EE_BufferRead_14: (+1)
+   \   000003E0   0x.... 0x....      LDR.W    R0,??DataTable8
+   \   000003E4   0x8FC0             LDRH     R0,[R0, #+62]
+   \   000003E6   0xF050 0x0001      ORRS     R0,R0,#0x1
+   \   000003EA   0x.... 0x....      LDR.W    R1,??DataTable8
+   \   000003EE   0x87C8             STRH     R0,[R1, #+62]
+   \   000003F0   0xE041             B.N      ??I2C_EE_BufferRead_15
+    221              }
+    222              else if( TypeAirO2 == O2)
+   \                     ??I2C_EE_BufferRead_11: (+1)
+   \   000003F2   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   000003F6   0xF1BB 0x0F01      CMP      R11,#+1
+   \   000003FA   0xD13C             BNE.N    ??I2C_EE_BufferRead_15
+    223              {
+    224                  if(TSI_FlowROM[TypeAirO2].Data.MN == 840522)
+   \   000003FC   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   00000400   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   00000404   0xF240 0x1133      MOVW     R1,#+307
+   \   00000408   0xFB01 0x000B      MLA      R0,R1,R11,R0
+   \   0000040C   0x6880             LDR      R0,[R0, #+8]
+   \   0000040E   0x.... 0x....      LDR.W    R1,??DataTable8_3  ;; 0xcd34a
+   \   00000412   0x4288             CMP      R0,R1
+   \   00000414   0xD109             BNE.N    ??I2C_EE_BufferRead_16
+    225                      DATA_Sensors.HWErr.TSIASSEMO2 = FALSE;
+   \   00000416   0x.... 0x....      LDR.W    R0,??DataTable8
+   \   0000041A   0x8FC0             LDRH     R0,[R0, #+62]
+   \   0000041C   0xF64F 0x71F7      MOVW     R1,#+65527
+   \   00000420   0x4008             ANDS     R0,R1,R0
+   \   00000422   0x.... 0x....      LDR.W    R1,??DataTable8
+   \   00000426   0x87C8             STRH     R0,[R1, #+62]
+   \   00000428   0xE007             B.N      ??I2C_EE_BufferRead_17
+    226                  else
+    227                      DATA_Sensors.HWErr.TSIASSEMO2 = TRUE;
+   \                     ??I2C_EE_BufferRead_16: (+1)
+   \   0000042A   0x.... 0x....      LDR.W    R0,??DataTable8
+   \   0000042E   0x8FC0             LDRH     R0,[R0, #+62]
+   \   00000430   0xF050 0x0008      ORRS     R0,R0,#0x8
+   \   00000434   0x.... 0x....      LDR.W    R1,??DataTable8
+   \   00000438   0x87C8             STRH     R0,[R1, #+62]
+    228                  
+    229                  if(TSI_FlowROM[TypeAirO2].Control.Index >= Flow_E2Prom_ADD_Len)
+   \                     ??I2C_EE_BufferRead_17: (+1)
+   \   0000043A   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   0000043E   0xFA5F 0xFB8B      UXTB     R11,R11          ;; ZeroExt  R11,R11,#+24,#+24
+   \   00000442   0xF240 0x1133      MOVW     R1,#+307
+   \   00000446   0xFB01 0x000B      MLA      R0,R1,R11,R0
+   \   0000044A   0xF8B0 0x0128      LDRH     R0,[R0, #+296]
+   \   0000044E   0x2856             CMP      R0,#+86
+   \   00000450   0xDB09             BLT.N    ??I2C_EE_BufferRead_18
+    230                      DATA_Sensors.HWErr.TSIROMO2 = FALSE;
+   \   00000452   0x.... 0x....      LDR.W    R0,??DataTable8
+   \   00000456   0x8FC0             LDRH     R0,[R0, #+62]
+   \   00000458   0xF64F 0x71FB      MOVW     R1,#+65531
+   \   0000045C   0x4008             ANDS     R0,R1,R0
+   \   0000045E   0x.... 0x....      LDR.W    R1,??DataTable8
+   \   00000462   0x87C8             STRH     R0,[R1, #+62]
+   \   00000464   0xE007             B.N      ??I2C_EE_BufferRead_15
+    231                  else
+    232                      DATA_Sensors.HWErr.TSIROMO2 = TRUE;
+   \                     ??I2C_EE_BufferRead_18: (+1)
+   \   00000466   0x.... 0x....      LDR.W    R0,??DataTable8
+   \   0000046A   0x8FC0             LDRH     R0,[R0, #+62]
+   \   0000046C   0xF050 0x0004      ORRS     R0,R0,#0x4
+   \   00000470   0x.... 0x....      LDR.W    R1,??DataTable8
+   \   00000474   0x87C8             STRH     R0,[R1, #+62]
+    233              }
+    234          }
+   \                     ??I2C_EE_BufferRead_15: (+1)
+   \   00000476   0xE8BD 0x8FF1      POP      {R0,R4-R11,PC}   ;; return
+    235          //---------------------------------------------------------------------------------------
+
+   \                                 In section .text, align 2, keep-with-next
+    236          void CRC_Calculation (u8 NewData)
+    237          {
+    238              static         u16   	CRC_temp = 0 ;
+    239              u8	i; 
+    240              CRC_temp ^= NewData;
+   \                     CRC_Calculation: (+1)
+   \   00000000   0x.... 0x....      LDR.W    R2,??DataTable8_4
+   \   00000004   0x8812             LDRH     R2,[R2, #+0]
+   \   00000006   0xB2C0             UXTB     R0,R0            ;; ZeroExt  R0,R0,#+24,#+24
+   \   00000008   0x4042             EORS     R2,R0,R2
+   \   0000000A   0x.... 0x....      LDR.W    R3,??DataTable8_4
+   \   0000000E   0x801A             STRH     R2,[R3, #+0]
+    241              for(i=0; i<8; i++)//for(i=0; i>8; i++)
+   \   00000010   0x2200             MOVS     R2,#+0
+   \   00000012   0x0011             MOVS     R1,R2
+   \                     ??CRC_Calculation_0: (+1)
+   \   00000014   0xB2C9             UXTB     R1,R1            ;; ZeroExt  R1,R1,#+24,#+24
+   \   00000016   0x2908             CMP      R1,#+8
+   \   00000018   0xDA21             BGE.N    ??CRC_Calculation_1
+    242              {
+    243                  if(CRC_temp & 0x0001)
+   \   0000001A   0x.... 0x....      LDR.W    R2,??DataTable8_4
+   \   0000001E   0x7812             LDRB     R2,[R2, #+0]
+   \   00000020   0x07D2             LSLS     R2,R2,#+31
+   \   00000022   0xD512             BPL.N    ??CRC_Calculation_2
+    244                  {
+    245                      CRC_temp >>= 1;
+   \   00000024   0x.... 0x....      LDR.W    R2,??DataTable8_4
+   \   00000028   0x8812             LDRH     R2,[R2, #+0]
+   \   0000002A   0xB292             UXTH     R2,R2            ;; ZeroExt  R2,R2,#+16,#+16
+   \   0000002C   0x0852             LSRS     R2,R2,#+1
+   \   0000002E   0x.... 0x....      LDR.W    R3,??DataTable8_4
+   \   00000032   0x801A             STRH     R2,[R3, #+0]
+    246                      CRC_temp ^= 0xA001;
+   \   00000034   0x.... 0x....      LDR.W    R2,??DataTable8_4
+   \   00000038   0x8812             LDRH     R2,[R2, #+0]
+   \   0000003A   0xF482 0x4220      EOR      R2,R2,#0xA000
+   \   0000003E   0xF092 0x0201      EORS     R2,R2,#0x1
+   \   00000042   0x.... 0x....      LDR.W    R3,??DataTable8_4
+   \   00000046   0x801A             STRH     R2,[R3, #+0]
+   \   00000048   0xE007             B.N      ??CRC_Calculation_3
+    247                  }
+    248                  else
+    249                      CRC_temp >>= 1;
+   \                     ??CRC_Calculation_2: (+1)
+   \   0000004A   0x.... 0x....      LDR.W    R2,??DataTable8_4
+   \   0000004E   0x8812             LDRH     R2,[R2, #+0]
+   \   00000050   0xB292             UXTH     R2,R2            ;; ZeroExt  R2,R2,#+16,#+16
+   \   00000052   0x0852             LSRS     R2,R2,#+1
+   \   00000054   0x.... 0x....      LDR.W    R3,??DataTable8_4
+   \   00000058   0x801A             STRH     R2,[R3, #+0]
+    250              }
+   \                     ??CRC_Calculation_3: (+1)
+   \   0000005A   0x1C49             ADDS     R1,R1,#+1
+   \   0000005C   0xE7DA             B.N      ??CRC_Calculation_0
+    251          }
+   \                     ??CRC_Calculation_1: (+1)
+   \   0000005E   0x4770             BX       LR               ;; return
+
+   \                                 In section .bss, align 2
+   \                     ??CRC_temp:
+   \   00000000                      DS8 2
+    252          /*************************** flow Service *********************************/
+
+   \                                 In section .bss, align 4
+    253          u16 	Vf[2], Vt[2];
+   \                     Vf:
+   \   00000000                      DS8 4
+
+   \                                 In section .bss, align 4
+   \                     Vt:
+   \   00000000                      DS8 4
+
+   \                                 In section .bss, align 4
+    254          float fVf[2], fVt[2];
+   \                     fVf:
+   \   00000000                      DS8 8
+
+   \                                 In section .bss, align 4
+   \                     fVt:
+   \   00000000                      DS8 8
+    255          //--------------------------------------------
+
+   \                                 In section .text, align 4, keep-with-next
+    256          void Flow_TSI_Service(u8 type)
+    257          {
+   \                     Flow_TSI_Service: (+1)
+   \   00000000   0xB510             PUSH     {R4,LR}
+   \   00000002   0x0004             MOVS     R4,R0
+    258              if(type == AIR)
+   \   00000004   0xB2E4             UXTB     R4,R4            ;; ZeroExt  R4,R4,#+24,#+24
+   \   00000006   0x2C00             CMP      R4,#+0
+   \   00000008   0xD146             BNE.N    ??Flow_TSI_Service_0
+    259              {
+    260                  Vf[AIR] = VA2dExt_Data.AirVf;
+   \   0000000A   0x.... 0x....      LDR.W    R0,??DataTable8_5
+   \   0000000E   0x8840             LDRH     R0,[R0, #+2]
+   \   00000010   0x.... 0x....      LDR.W    R1,??DataTable8_6
+   \   00000014   0x8008             STRH     R0,[R1, #+0]
+    261                  Vt[AIR] = VA2dExt_Data.AirVt;
+   \   00000016   0x.... 0x....      LDR.W    R0,??DataTable8_5
+   \   0000001A   0x8800             LDRH     R0,[R0, #+0]
+   \   0000001C   0x.... 0x....      LDR.W    R1,??DataTable8_7
+   \   00000020   0x8008             STRH     R0,[R1, #+0]
+    262                  fVf[AIR] = ((float) (((u32) (VA2dExt_Data.AirVf * A2DEXT_VREFmv)) / A2DEXT_MAXVAL)) / 1000;//Convert mVolt TO Volt
+   \   00000022   0x.... 0x....      LDR.W    R0,??DataTable8_5
+   \   00000026   0x8840             LDRH     R0,[R0, #+2]
+   \   00000028   0xF241 0x3188      MOVW     R1,#+5000
+   \   0000002C   0x4348             MULS     R0,R1,R0
+   \   0000002E   0xF64F 0x71FF      MOVW     R1,#+65535
+   \   00000032   0xFBB0 0xF0F1      UDIV     R0,R0,R1
+   \   00000036   0xEE00 0x0A10      VMOV     S0,R0
+   \   0000003A   0xEEB8 0x0A40      VCVT.F32.U32 S0,S0
+   \   0000003E   0xEDDF 0x....      VLDR.W   S1,??DataTable3  ;; 0x447a0000
+   \   00000042   0xEE80 0x0A20      VDIV.F32 S0,S0,S1
+   \   00000046   0x.... 0x....      LDR.W    R0,??DataTable8_8
+   \   0000004A   0xED80 0x0A00      VSTR     S0,[R0, #0]
+    263                  fVt[AIR] = ((float) (((u32) (VA2dExt_Data.AirVt * A2DEXT_VREFmv)) / A2DEXT_MAXVAL)) / 1000;
+   \   0000004E   0x.... 0x....      LDR.W    R0,??DataTable8_5
+   \   00000052   0x8800             LDRH     R0,[R0, #+0]
+   \   00000054   0xF241 0x3188      MOVW     R1,#+5000
+   \   00000058   0x4348             MULS     R0,R1,R0
+   \   0000005A   0xF64F 0x71FF      MOVW     R1,#+65535
+   \   0000005E   0xFBB0 0xF0F1      UDIV     R0,R0,R1
+   \   00000062   0xEE00 0x0A10      VMOV     S0,R0
+   \   00000066   0xEEB8 0x0A40      VCVT.F32.U32 S0,S0
+   \   0000006A   0xEDDF 0x....      VLDR.W   S1,??DataTable3  ;; 0x447a0000
+   \   0000006E   0xEE80 0x0A20      VDIV.F32 S0,S0,S1
+   \   00000072   0x.... 0x....      LDR.W    R0,??DataTable8_9
+   \   00000076   0xED80 0x0A00      VSTR     S0,[R0, #0]
+    264                  DATA_Sensors.Flow_AIR = (u16)(flow_calculation(AIR)*100 );
+   \   0000007A   0x2000             MOVS     R0,#+0
+   \   0000007C   0x.... 0x....      BL       flow_calculation
+   \   00000080   0xEDDF 0x....      VLDR.W   S1,??DataTable3_1  ;; 0x42c80000
+   \   00000084   0xEE20 0x0A20      VMUL.F32 S0,S0,S1
+   \   00000088   0xEEBD 0x0AC0      VCVT.S32.F32 S0,S0
+   \   0000008C   0xEE10 0x0A10      VMOV     R0,S0
+   \   00000090   0x.... 0x....      LDR.W    R1,??DataTable8
+   \   00000094   0x8108             STRH     R0,[R1, #+8]
+   \   00000096   0xE048             B.N      ??Flow_TSI_Service_1
+    265              }
+    266              else if(type == O2)
+   \                     ??Flow_TSI_Service_0: (+1)
+   \   00000098   0xB2E4             UXTB     R4,R4            ;; ZeroExt  R4,R4,#+24,#+24
+   \   0000009A   0x2C01             CMP      R4,#+1
+   \   0000009C   0xD145             BNE.N    ??Flow_TSI_Service_1
+    267              {
+    268                  Vf[O2]  = VA2dExt_Data.O2Vf;
+   \   0000009E   0x.... 0x....      LDR.W    R0,??DataTable8_5
+   \   000000A2   0x88C0             LDRH     R0,[R0, #+6]
+   \   000000A4   0x.... 0x....      LDR.W    R1,??DataTable8_6
+   \   000000A8   0x8048             STRH     R0,[R1, #+2]
+    269                  Vt[O2]  = VA2dExt_Data.O2Vt;
+   \   000000AA   0x.... 0x....      LDR.W    R0,??DataTable8_5
+   \   000000AE   0x8880             LDRH     R0,[R0, #+4]
+   \   000000B0   0x.... 0x....      LDR.W    R1,??DataTable8_7
+   \   000000B4   0x8048             STRH     R0,[R1, #+2]
+    270                  fVf[O2]  = ((float) (((u32) (VA2dExt_Data.O2Vf  * A2DEXT_VREFmv)) / A2DEXT_MAXVAL)) / 1000;
+   \   000000B6   0x.... 0x....      LDR.W    R0,??DataTable8_5
+   \   000000BA   0x88C0             LDRH     R0,[R0, #+6]
+   \   000000BC   0xF241 0x3188      MOVW     R1,#+5000
+   \   000000C0   0x4348             MULS     R0,R1,R0
+   \   000000C2   0xF64F 0x71FF      MOVW     R1,#+65535
+   \   000000C6   0xFBB0 0xF0F1      UDIV     R0,R0,R1
+   \   000000CA   0xEE00 0x0A10      VMOV     S0,R0
+   \   000000CE   0xEEB8 0x0A40      VCVT.F32.U32 S0,S0
+   \   000000D2   0xEDDF 0x....      VLDR.W   S1,??DataTable3  ;; 0x447a0000
+   \   000000D6   0xEE80 0x0A20      VDIV.F32 S0,S0,S1
+   \   000000DA   0x.... 0x....      LDR.W    R0,??DataTable8_8
+   \   000000DE   0xED80 0x0A01      VSTR     S0,[R0, #+4]
+    271                  fVt[O2]  = ((float) (((u32) (VA2dExt_Data.O2Vt  * A2DEXT_VREFmv)) / A2DEXT_MAXVAL)) / 1000;
+   \   000000E2   0x.... 0x....      LDR.W    R0,??DataTable8_5
+   \   000000E6   0x8880             LDRH     R0,[R0, #+4]
+   \   000000E8   0xF241 0x3188      MOVW     R1,#+5000
+   \   000000EC   0x4348             MULS     R0,R1,R0
+   \   000000EE   0xF64F 0x71FF      MOVW     R1,#+65535
+   \   000000F2   0xFBB0 0xF0F1      UDIV     R0,R0,R1
+   \   000000F6   0xEE00 0x0A10      VMOV     S0,R0
+   \   000000FA   0xEEB8 0x0A40      VCVT.F32.U32 S0,S0
+   \   000000FE   0xEDDF 0x....      VLDR.W   S1,??DataTable3  ;; 0x447a0000
+   \   00000102   0xEE80 0x0A20      VDIV.F32 S0,S0,S1
+   \   00000106   0x.... 0x....      LDR.W    R0,??DataTable8_9
+   \   0000010A   0xED80 0x0A01      VSTR     S0,[R0, #+4]
+    272                  DATA_Sensors.Flow_O2 = (u16)(flow_calculation(O2)*100 );
+   \   0000010E   0x2001             MOVS     R0,#+1
+   \   00000110   0x.... 0x....      BL       flow_calculation
+   \   00000114   0xEDDF 0x....      VLDR.W   S1,??DataTable3_1  ;; 0x42c80000
+   \   00000118   0xEE20 0x0A20      VMUL.F32 S0,S0,S1
+   \   0000011C   0xEEBD 0x0AC0      VCVT.S32.F32 S0,S0
+   \   00000120   0xEE10 0x0A10      VMOV     R0,S0
+   \   00000124   0x.... 0x....      LDR.W    R1,??DataTable8
+   \   00000128   0x8148             STRH     R0,[R1, #+10]
+    273              }
+    274          }
+   \                     ??Flow_TSI_Service_1: (+1)
+   \   0000012A   0xBD10             POP      {R4,PC}          ;; return
+    275          /*************************** flow Service *********************************/
+
+   \                                 In section .text, align 4, keep-with-next
+    276          float flow_calculation (u8 type)
+    277          {
+   \                     flow_calculation: (+1)
+   \   00000000   0xB538             PUSH     {R3-R5,LR}
+   \   00000002   0xED2D 0x8B0A      VPUSH    {D8-D12}
+   \   00000006   0x0004             MOVS     R4,R0
+    278              float T_temp, T_over, V_fStd,Q,K,PressAmIn; 
+    279              u8 i = 0;
+   \   00000008   0x2500             MOVS     R5,#+0
+    280              
+    281              //----Step 4
+    282              T_temp = TSI_FlowROM[type].Data.Tcorr + temp_Convert(Vt[type]);
+   \   0000000A   0x.... 0x....      LDR.W    R0,??DataTable8_7
+   \   0000000E   0xB2E4             UXTB     R4,R4            ;; ZeroExt  R4,R4,#+24,#+24
+   \   00000010   0xF830 0x0014      LDRH     R0,[R0, R4, LSL #+1]
+   \   00000014   0x.... 0x....      BL       temp_Convert
+   \   00000018   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   0000001C   0xB2E4             UXTB     R4,R4            ;; ZeroExt  R4,R4,#+24,#+24
+   \   0000001E   0xF240 0x1133      MOVW     R1,#+307
+   \   00000022   0xFB01 0x0004      MLA      R0,R1,R4,R0
+   \   00000026   0xF8D0 0x0025      LDR      R0,[R0, #+37]
+   \   0000002A   0xEE00 0x0A90      VMOV     S1,R0
+   \   0000002E   0xEE30 0x0A80      VADD.F32 S0,S1,S0
+   \   00000032   0xEEB0 0x8A40      VMOV.F32 S16,S0
+    283              if(type == AIR) 
+   \   00000036   0xB2E4             UXTB     R4,R4            ;; ZeroExt  R4,R4,#+24,#+24
+   \   00000038   0x2C00             CMP      R4,#+0
+   \   0000003A   0xD10B             BNE.N    ??flow_calculation_0
+    284                 DATA_Sensors.Temp_Gas_Air = (s16)(T_temp * 10);
+   \   0000003C   0xEEB2 0x0A04      VMOV.F32 S0,#10.0
+   \   00000040   0xEE28 0x0A00      VMUL.F32 S0,S16,S0
+   \   00000044   0xEEBD 0x0AC0      VCVT.S32.F32 S0,S0
+   \   00000048   0xEE10 0x0A10      VMOV     R0,S0
+   \   0000004C   0x.... 0x....      LDR.W    R1,??DataTable8
+   \   00000050   0x8748             STRH     R0,[R1, #+58]
+   \   00000052   0xE00D             B.N      ??flow_calculation_1
+    285              else if(type == O2)
+   \                     ??flow_calculation_0: (+1)
+   \   00000054   0xB2E4             UXTB     R4,R4            ;; ZeroExt  R4,R4,#+24,#+24
+   \   00000056   0x2C01             CMP      R4,#+1
+   \   00000058   0xD10A             BNE.N    ??flow_calculation_1
+    286              DATA_Sensors.Temp_Gas_O2 = (s16)(T_temp * 10);
+   \   0000005A   0xEEB2 0x0A04      VMOV.F32 S0,#10.0
+   \   0000005E   0xEE28 0x0A00      VMUL.F32 S0,S16,S0
+   \   00000062   0xEEBD 0x0AC0      VCVT.S32.F32 S0,S0
+   \   00000066   0xEE10 0x0A10      VMOV     R0,S0
+   \   0000006A   0x.... 0x....      LDR.W    R1,??DataTable8
+   \   0000006E   0x8788             STRH     R0,[R1, #+60]
+    287              //----Step 5	
+    288              if(T_temp >= TEMP_REF)// Use K coefficient if T >= 21.11
+   \                     ??flow_calculation_1: (+1)
+   \   00000070   0xED9F 0x....      VLDR.W   S0,??DataTable4_2  ;; 0x41a8e148
+   \   00000074   0xEEB4 0x8A40      VCMP.F32 S16,S0
+   \   00000078   0xEEF1 0xFA10      FMSTAT   
+   \   0000007C   0xDB5C             BLT.N    ??flow_calculation_2
+    289              {
+    290                  T_over = (TSI_FlowROM[type].Data.K0 +(TSI_FlowROM[type].Data.K1 * T_temp)+(TSI_FlowROM[type].Data.K2 * (float)(pow(T_temp,2)))+(TSI_FlowROM[type].Data.K3 * (float)(pow(T_temp,3))));
+   \   0000007E   0xEE18 0x0A10      VMOV     R0,S16
+   \   00000082   0x.... 0x....      BL       __aeabi_f2d
+   \   00000086   0xEC41 0x0B10      VMOV     D0,R0,R1
+   \   0000008A   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   0000008E   0xB2E4             UXTB     R4,R4            ;; ZeroExt  R4,R4,#+24,#+24
+   \   00000090   0xF240 0x1133      MOVW     R1,#+307
+   \   00000094   0xFB01 0x0004      MLA      R0,R1,R4,R0
+   \   00000098   0xF8D0 0x003A      LDR      R0,[R0, #+58]
+   \   0000009C   0xEE01 0x0A10      VMOV     S2,R0
+   \   000000A0   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   000000A4   0xB2E4             UXTB     R4,R4            ;; ZeroExt  R4,R4,#+24,#+24
+   \   000000A6   0xF240 0x1133      MOVW     R1,#+307
+   \   000000AA   0xFB01 0x0004      MLA      R0,R1,R4,R0
+   \   000000AE   0xF8D0 0x0036      LDR      R0,[R0, #+54]
+   \   000000B2   0xEE0C 0x0A10      VMOV     S24,R0
+   \   000000B6   0xEE01 0xCA08      VMLA.F32 S24,S2,S16
+   \   000000BA   0xEC53 0x2B10      VMOV     R2,R3,D0
+   \   000000BE   0xEC51 0x0B10      VMOV     R0,R1,D0
+   \   000000C2   0x.... 0x....      BL       __aeabi_dmul
+   \   000000C6   0x.... 0x....      BL       __aeabi_d2f
+   \   000000CA   0xEE00 0x0A10      VMOV     S0,R0
+   \   000000CE   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   000000D2   0xB2E4             UXTB     R4,R4            ;; ZeroExt  R4,R4,#+24,#+24
+   \   000000D4   0xF240 0x1133      MOVW     R1,#+307
+   \   000000D8   0xFB01 0x0004      MLA      R0,R1,R4,R0
+   \   000000DC   0xF8D0 0x003E      LDR      R0,[R0, #+62]
+   \   000000E0   0xEE00 0x0A90      VMOV     S1,R0
+   \   000000E4   0xEE00 0xCA20      VMLA.F32 S24,S0,S1
+   \   000000E8   0xED9F 0x....      VLDR.W   D1,??DataTable4
+   \   000000EC   0xEEB0 0xBA41      VMOV.F32 S22,S2
+   \   000000F0   0xEEF0 0xBA61      VMOV.F32 S23,S3
+   \   000000F4   0xEE18 0x0A10      VMOV     R0,S16
+   \   000000F8   0x.... 0x....      BL       __aeabi_f2d
+   \   000000FC   0xEC41 0x0B10      VMOV     D0,R0,R1
+   \   00000100   0xEEB0 0x1A4B      VMOV.F32 S2,S22
+   \   00000104   0xEEF0 0x1A6B      VMOV.F32 S3,S23
+   \   00000108   0x.... 0x....      BL       pow
+   \   0000010C   0xEC51 0x0B10      VMOV     R0,R1,D0
+   \   00000110   0x.... 0x....      BL       __aeabi_d2f
+   \   00000114   0xEE00 0x0A10      VMOV     S0,R0
+   \   00000118   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   0000011C   0xB2E4             UXTB     R4,R4            ;; ZeroExt  R4,R4,#+24,#+24
+   \   0000011E   0xF240 0x1133      MOVW     R1,#+307
+   \   00000122   0xFB01 0x0004      MLA      R0,R1,R4,R0
+   \   00000126   0xF8D0 0x0042      LDR      R0,[R0, #+66]
+   \   0000012A   0xEE00 0x0A90      VMOV     S1,R0
+   \   0000012E   0xEE00 0xCA20      VMLA.F32 S24,S0,S1
+   \   00000132   0xEEF0 0x8A4C      VMOV.F32 S17,S24
+   \   00000136   0xE05B             B.N      ??flow_calculation_3
+    291              }
+    292              else // Use L coefficient
+    293              {
+    294                  T_over = (TSI_FlowROM[type].Data.L0 +(TSI_FlowROM[type].Data.L1 * T_temp)+(TSI_FlowROM[type].Data.L2 * (float)(pow(T_temp,2)))+(TSI_FlowROM[type].Data.L3 * (float)(pow(T_temp,3))));
+   \                     ??flow_calculation_2: (+1)
+   \   00000138   0xEE18 0x0A10      VMOV     R0,S16
+   \   0000013C   0x.... 0x....      BL       __aeabi_f2d
+   \   00000140   0xEC41 0x0B10      VMOV     D0,R0,R1
+   \   00000144   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   00000148   0xB2E4             UXTB     R4,R4            ;; ZeroExt  R4,R4,#+24,#+24
+   \   0000014A   0xF240 0x1133      MOVW     R1,#+307
+   \   0000014E   0xFB01 0x0004      MLA      R0,R1,R4,R0
+   \   00000152   0xF8D0 0x004A      LDR      R0,[R0, #+74]
+   \   00000156   0xEE01 0x0A10      VMOV     S2,R0
+   \   0000015A   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   0000015E   0xB2E4             UXTB     R4,R4            ;; ZeroExt  R4,R4,#+24,#+24
+   \   00000160   0xF240 0x1133      MOVW     R1,#+307
+   \   00000164   0xFB01 0x0004      MLA      R0,R1,R4,R0
+   \   00000168   0xF8D0 0x0046      LDR      R0,[R0, #+70]
+   \   0000016C   0xEE0C 0x0A10      VMOV     S24,R0
+   \   00000170   0xEE01 0xCA08      VMLA.F32 S24,S2,S16
+   \   00000174   0xEC53 0x2B10      VMOV     R2,R3,D0
+   \   00000178   0xEC51 0x0B10      VMOV     R0,R1,D0
+   \   0000017C   0x.... 0x....      BL       __aeabi_dmul
+   \   00000180   0x.... 0x....      BL       __aeabi_d2f
+   \   00000184   0xEE00 0x0A10      VMOV     S0,R0
+   \   00000188   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   0000018C   0xB2E4             UXTB     R4,R4            ;; ZeroExt  R4,R4,#+24,#+24
+   \   0000018E   0xF240 0x1133      MOVW     R1,#+307
+   \   00000192   0xFB01 0x0004      MLA      R0,R1,R4,R0
+   \   00000196   0xF8D0 0x004E      LDR      R0,[R0, #+78]
+   \   0000019A   0xEE00 0x0A90      VMOV     S1,R0
+   \   0000019E   0xEE00 0xCA20      VMLA.F32 S24,S0,S1
+   \   000001A2   0xED9F 0x....      VLDR.W   D1,??DataTable4
+   \   000001A6   0xEEB0 0xBA41      VMOV.F32 S22,S2
+   \   000001AA   0xEEF0 0xBA61      VMOV.F32 S23,S3
+   \   000001AE   0xEE18 0x0A10      VMOV     R0,S16
+   \   000001B2   0x.... 0x....      BL       __aeabi_f2d
+   \   000001B6   0xEC41 0x0B10      VMOV     D0,R0,R1
+   \   000001BA   0xEEB0 0x1A4B      VMOV.F32 S2,S22
+   \   000001BE   0xEEF0 0x1A6B      VMOV.F32 S3,S23
+   \   000001C2   0x.... 0x....      BL       pow
+   \   000001C6   0xEC51 0x0B10      VMOV     R0,R1,D0
+   \   000001CA   0x.... 0x....      BL       __aeabi_d2f
+   \   000001CE   0xEE00 0x0A10      VMOV     S0,R0
+   \   000001D2   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   000001D6   0xB2E4             UXTB     R4,R4            ;; ZeroExt  R4,R4,#+24,#+24
+   \   000001D8   0xF240 0x1133      MOVW     R1,#+307
+   \   000001DC   0xFB01 0x0004      MLA      R0,R1,R4,R0
+   \   000001E0   0xF8D0 0x0052      LDR      R0,[R0, #+82]
+   \   000001E4   0xEE00 0x0A90      VMOV     S1,R0
+   \   000001E8   0xEE00 0xCA20      VMLA.F32 S24,S0,S1
+   \   000001EC   0xEEF0 0x8A4C      VMOV.F32 S17,S24
+    295              }
+    296              //----Step 6
+    297              V_fStd = ((fVf[type] + TSI_FlowROM[type].Data.Z)*((float)(sqrt((T_over - TEMP_REF)/(T_over - T_temp))))) - TSI_FlowROM[type].Data.Z;
+   \                     ??flow_calculation_3: (+1)
+   \   000001F0   0x.... 0x....      LDR.W    R0,??DataTable8_8
+   \   000001F4   0xB2E4             UXTB     R4,R4            ;; ZeroExt  R4,R4,#+24,#+24
+   \   000001F6   0xEB10 0x0084      ADDS     R0,R0,R4, LSL #+2
+   \   000001FA   0xED90 0x0A00      VLDR     S0,[R0, #0]
+   \   000001FE   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   00000202   0xB2E4             UXTB     R4,R4            ;; ZeroExt  R4,R4,#+24,#+24
+   \   00000204   0xF240 0x1133      MOVW     R1,#+307
+   \   00000208   0xFB01 0x0004      MLA      R0,R1,R4,R0
+   \   0000020C   0xF8D0 0x0019      LDR      R0,[R0, #+25]
+   \   00000210   0xEE00 0x0A90      VMOV     S1,R0
+   \   00000214   0xEE30 0xBA20      VADD.F32 S22,S0,S1
+   \   00000218   0xED9F 0x....      VLDR.W   S0,??DataTable4_1  ;; 0xc1a8e148
+   \   0000021C   0xEE38 0x0A80      VADD.F32 S0,S17,S0
+   \   00000220   0xEE78 0x0AC8      VSUB.F32 S1,S17,S16
+   \   00000224   0xEE80 0x0A20      VDIV.F32 S0,S0,S1
+   \   00000228   0xEE10 0x0A10      VMOV     R0,S0
+   \   0000022C   0x.... 0x....      BL       __aeabi_f2d
+   \   00000230   0xEC41 0x0B10      VMOV     D0,R0,R1
+   \   00000234   0x.... 0x....      BL       sqrt
+   \   00000238   0xEC51 0x0B10      VMOV     R0,R1,D0
+   \   0000023C   0x.... 0x....      BL       __aeabi_d2f
+   \   00000240   0xEE00 0x0A10      VMOV     S0,R0
+   \   00000244   0xEE2B 0x0A00      VMUL.F32 S0,S22,S0
+   \   00000248   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   0000024C   0xB2E4             UXTB     R4,R4            ;; ZeroExt  R4,R4,#+24,#+24
+   \   0000024E   0xF240 0x1133      MOVW     R1,#+307
+   \   00000252   0xFB01 0x0004      MLA      R0,R1,R4,R0
+   \   00000256   0xF8D0 0x0019      LDR      R0,[R0, #+25]
+   \   0000025A   0xEE00 0x0A90      VMOV     S1,R0
+   \   0000025E   0xEE30 0x0A60      VSUB.F32 S0,S0,S1
+   \   00000262   0xEEB0 0x9A40      VMOV.F32 S18,S0
+    298              //----Step 7	
+    299              while((V_fStd > TSI_FlowROM[type].Data.Coeff[i].V)&&(i < TSI_FlowROM[type].Data.CoeffNUM ))
+   \                     ??flow_calculation_4: (+1)
+   \   00000266   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   0000026A   0xB2E4             UXTB     R4,R4            ;; ZeroExt  R4,R4,#+24,#+24
+   \   0000026C   0xF240 0x1133      MOVW     R1,#+307
+   \   00000270   0xFB01 0x0004      MLA      R0,R1,R4,R0
+   \   00000274   0xB2ED             UXTB     R5,R5            ;; ZeroExt  R5,R5,#+24,#+24
+   \   00000276   0xEB10 0x1005      ADDS     R0,R0,R5, LSL #+4
+   \   0000027A   0xF8D0 0x0062      LDR      R0,[R0, #+98]
+   \   0000027E   0xEE00 0x0A10      VMOV     S0,R0
+   \   00000282   0xEEB4 0x0A49      VCMP.F32 S0,S18
+   \   00000286   0xEEF1 0xFA10      FMSTAT   
+   \   0000028A   0xD50D             BPL.N    ??flow_calculation_5
+   \   0000028C   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   00000290   0xB2E4             UXTB     R4,R4            ;; ZeroExt  R4,R4,#+24,#+24
+   \   00000292   0xF240 0x1133      MOVW     R1,#+307
+   \   00000296   0xFB01 0x0004      MLA      R0,R1,R4,R0
+   \   0000029A   0xF890 0x0035      LDRB     R0,[R0, #+53]
+   \   0000029E   0xB2ED             UXTB     R5,R5            ;; ZeroExt  R5,R5,#+24,#+24
+   \   000002A0   0x4285             CMP      R5,R0
+   \   000002A2   0xD201             BCS.N    ??flow_calculation_5
+    300              {
+    301                  i++;
+   \   000002A4   0x1C6D             ADDS     R5,R5,#+1
+   \   000002A6   0xE7DE             B.N      ??flow_calculation_4
+    302              }
+    303              if(i)
+   \                     ??flow_calculation_5: (+1)
+   \   000002A8   0xB2ED             UXTB     R5,R5            ;; ZeroExt  R5,R5,#+24,#+24
+   \   000002AA   0x2D00             CMP      R5,#+0
+   \   000002AC   0xD000             BEQ.N    ??flow_calculation_6
+    304                  i --;	
+   \   000002AE   0x1E6D             SUBS     R5,R5,#+1
+    305              //----Step 8	
+    306              Q = TSI_FlowROM[type].Data.Coeff[i].A +(TSI_FlowROM[type].Data.Coeff[i].B * (float)(pow(V_fStd , 2)))+(TSI_FlowROM[type].Data.Coeff[i].C * (float)(pow(V_fStd , 5)));
+   \                     ??flow_calculation_6: (+1)
+   \   000002B0   0xEE19 0x0A10      VMOV     R0,S18
+   \   000002B4   0x.... 0x....      BL       __aeabi_f2d
+   \   000002B8   0xEC41 0x0B10      VMOV     D0,R0,R1
+   \   000002BC   0xEC53 0x2B10      VMOV     R2,R3,D0
+   \   000002C0   0xEC51 0x0B10      VMOV     R0,R1,D0
+   \   000002C4   0x.... 0x....      BL       __aeabi_dmul
+   \   000002C8   0x.... 0x....      BL       __aeabi_d2f
+   \   000002CC   0xEE00 0x0A10      VMOV     S0,R0
+   \   000002D0   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   000002D4   0xB2E4             UXTB     R4,R4            ;; ZeroExt  R4,R4,#+24,#+24
+   \   000002D6   0xF240 0x1133      MOVW     R1,#+307
+   \   000002DA   0xFB01 0x0004      MLA      R0,R1,R4,R0
+   \   000002DE   0xB2ED             UXTB     R5,R5            ;; ZeroExt  R5,R5,#+24,#+24
+   \   000002E0   0xEB10 0x1005      ADDS     R0,R0,R5, LSL #+4
+   \   000002E4   0xF8D0 0x005A      LDR      R0,[R0, #+90]
+   \   000002E8   0xEE00 0x0A90      VMOV     S1,R0
+   \   000002EC   0x.... 0x....      LDR.W    R0,??DataTable6_3
+   \   000002F0   0xB2E4             UXTB     R4,R4            ;; ZeroExt  R4,R4,#+24,#+24
+   \   000002F2   0xF240 0x1133      MOVW     R1,#+307
+   \   000002F6   0xFB01 0x0004      MLA      R0,R1,R4,R0
+   \   000002FA   0xB2ED             UXTB     R5,R5            ;; ZeroExt  R5,R5,#+24,#+24
+   \   000002FC   0xEB10 0x1005      ADDS     R0,R0,R5, LSL #+4
+   \   00000300   0xF8D0 0x005E      LDR      R0,[R0, #+94]
+   \   00000304   0xEE0C 0x0A10      VMOV     S24,R0
+   \   00000308   0xEE00 0xCA20      VMLA.F32 S24,S0,S1
+   \   0000030C   0xED9F 0x....      VLDR.W   D1,??DataTable5
+   \   00000310   0xEEB0 0xBA41      VMOV.F32 S22,S2
+   \   00000314   0xEEF0 0xBA61      VMOV.F32 S23,S3
+   \   00000318   0xEE19 0x0A10      VMOV     R0,S18
+   \   0000031C   0x.... 0x....      BL       __aeabi_f2d
+   \   00000320   0xEC41 0x0B10      VMOV     D0,R0,R1
+   \   00000324   0xEEB0 0x1A4B      VMOV.F32 S2,S22
+   \   00000328   0xEEF0 0x1A6B      VMOV.F32 S3,S23
+   \   0000032C   0x.... 0x....      BL       pow
+   \   00000330   0xEC51 0x0B10      VMOV     R0,R1,D0
+   \   00000334   0x.... 0x....      BL       __aeabi_d2f
+   \   00000338   0xEE00 0x0A10      VMOV     S0,R0
+   \   0000033C   0x....             LDR.N    R0,??DataTable6_3
+   \   0000033E   0xB2E4             UXTB     R4,R4            ;; ZeroExt  R4,R4,#+24,#+24
+   \   00000340   0xF240 0x1133      MOVW     R1,#+307
+   \   00000344   0xFB01 0x0004      MLA      R0,R1,R4,R0
+   \   00000348   0xB2ED             UXTB     R5,R5            ;; ZeroExt  R5,R5,#+24,#+24
+   \   0000034A   0xEB10 0x1005      ADDS     R0,R0,R5, LSL #+4
+   \   0000034E   0xF8D0 0x0056      LDR      R0,[R0, #+86]
+   \   00000352   0xEE00 0x0A90      VMOV     S1,R0
+   \   00000356   0xEE00 0xCA20      VMLA.F32 S24,S0,S1
+   \   0000035A   0xEEF0 0x9A4C      VMOV.F32 S19,S24
+    307              
+    308              PressAmIn = ((float)DATA_Sensors.A2D_AmbientPressure / 10) + ((float)DATA_Sensors.Press_INH / 100 );
+   \   0000035E   0x.... 0x....      LDR.W    R0,??DataTable8
+   \   00000362   0x8B40             LDRH     R0,[R0, #+26]
+   \   00000364   0xEE00 0x0A10      VMOV     S0,R0
+   \   00000368   0xEEB8 0x0A40      VCVT.F32.U32 S0,S0
+   \   0000036C   0xEEF2 0x0A04      VMOV.F32 S1,#10.0
+   \   00000370   0xEE80 0x0A20      VDIV.F32 S0,S0,S1
+   \   00000374   0x.... 0x....      LDR.W    R0,??DataTable8
+   \   00000378   0xF9B0 0x0000      LDRSH    R0,[R0, #+0]
+   \   0000037C   0xEE00 0x0A90      VMOV     S1,R0
+   \   00000380   0xEEF8 0x0AE0      VCVT.F32.S32 S1,S1
+   \   00000384   0xED9F 0x....      VLDR.W   S2,??DataTable6  ;; 0x42c80000
+   \   00000388   0xEEC0 0x0A81      VDIV.F32 S1,S1,S2
+   \   0000038C   0xEE30 0x0A20      VADD.F32 S0,S0,S1
+   \   00000390   0xEEF0 0xAA40      VMOV.F32 S21,S0
+    309              K = ( PFixCOEFFICIENT1 / (PressAmIn - 64.0) ) * PFixCOEFFICIENT2;
+   \   00000394   0xEE1A 0x0A90      VMOV     R0,S21
+   \   00000398   0x.... 0x....      BL       __aeabi_f2d
+   \   0000039C   0x2200             MOVS     R2,#+0
+   \   0000039E   0x.... 0x....      LDR.W    R3,??DataTable8_10  ;; 0xc0500000
+   \   000003A2   0x.... 0x....      BL       __aeabi_dadd
+   \   000003A6   0x0002             MOVS     R2,R0
+   \   000003A8   0x000B             MOVS     R3,R1
+   \   000003AA   0x.... 0x....      LDR.W    R0,??DataTable8_11  ;; 0x78d4fdf4
+   \   000003AE   0x.... 0x....      LDR.W    R1,??DataTable8_12  ;; 0x409024e9
+   \   000003B2   0x.... 0x....      BL       __aeabi_ddiv
+   \   000003B6   0x.... 0x....      LDR.W    R2,??DataTable8_13  ;; 0x3f141206
+   \   000003BA   0x.... 0x....      LDR.W    R3,??DataTable8_14  ;; 0x3ff0dcc6
+   \   000003BE   0x.... 0x....      BL       __aeabi_dmul
+   \   000003C2   0x.... 0x....      BL       __aeabi_d2f
+   \   000003C6   0xEE0A 0x0A10      VMOV     S20,R0
+    310          
+    311              Q *= K;  //  convert STPD TO BTPS
+   \   000003CA   0xEE69 0x9A8A      VMUL.F32 S19,S19,S20
+    312              if(Q < 0)
+   \   000003CE   0xEEF5 0x9A40      VCMP.F32 S19,#0.0
+   \   000003D2   0xEEF1 0xFA10      FMSTAT   
+   \   000003D6   0xD503             BPL.N    ??flow_calculation_7
+    313                  Q = 0;
+   \   000003D8   0xED9F 0x....      VLDR.W   S0,??DataTable6_1  ;; 0x0
+   \   000003DC   0xEEF0 0x9A40      VMOV.F32 S19,S0
+    314              return Q ;
+   \                     ??flow_calculation_7: (+1)
+   \   000003E0   0xEEB0 0x0A69      VMOV.F32 S0,S19
+   \   000003E4   0xECBD 0x8B0A      VPOP     {D8-D12}
+   \   000003E8   0xBD31             POP      {R0,R4,R5,PC}    ;; return
+    315          }
+    316          //-------------------------------------------------------------------------------
+    317          
+    318          
+    319          /*************************** temp Convert **************************************/
+
+   \                                 In section .text, align 4, keep-with-next
+    320          float temp_Convert(u16 Val)
+    321          {
+   \                     temp_Convert: (+1)
+   \   00000000   0xB470             PUSH     {R4-R6}
+    322              s8          i;
+    323              u16         Vt,tmp;
+    324              float       Temp;
+    325              static  u8  TempTableState;
+    326              //	// -8.0295*F49^5 + 53.128*F49^4 - 144.94*F49^3 + 205.1*F49^2 - 185.02*F49+ 113.71
+    327              //	Temp = ((-8.0295 * pow(Vt,5))+(53.128*pow(Vt,4))-(144.94*pow(Vt,3))+(205.1*pow(Vt,2))-(185.02* Vt)+(113.71));
+    328              Vt = (u16) (((u32) Val * A2DEXT_VREFmv * 10) / A2DEXT_MAXVAL);
+   \   00000002   0xB280             UXTH     R0,R0            ;; ZeroExt  R0,R0,#+16,#+16
+   \   00000004   0xF24C 0x3450      MOVW     R4,#+50000
+   \   00000008   0xFB04 0xF400      MUL      R4,R4,R0
+   \   0000000C   0xF64F 0x75FF      MOVW     R5,#+65535
+   \   00000010   0xFBB4 0xF4F5      UDIV     R4,R4,R5
+   \   00000014   0x0022             MOVS     R2,R4
+    329              //                 28753
+    330              if(Vt <= TempTable[89])
+   \   00000016   0x.... 0x....      LDR.W    R4,??DataTable8_15
+   \   0000001A   0xF8B4 0x40B2      LDRH     R4,[R4, #+178]
+   \   0000001E   0xB292             UXTH     R2,R2            ;; ZeroExt  R2,R2,#+16,#+16
+   \   00000020   0x4294             CMP      R4,R2
+   \   00000022   0xD304             BCC.N    ??temp_Convert_0
+    331              {
+    332                  Temp = 70.00;
+   \   00000024   0xEDDF 0x....      VLDR.W   S1,??DataTable7  ;; 0x428c0000
+   \   00000028   0xEEB0 0x0A60      VMOV.F32 S0,S1
+   \   0000002C   0xE0B5             B.N      ??temp_Convert_1
+    333              }
+    334              else if(Vt < TempTable[0]) // 22923,3464
+   \                     ??temp_Convert_0: (+1)
+   \   0000002E   0x.... 0x....      LDR.W    R4,??DataTable8_15
+   \   00000032   0x8824             LDRH     R4,[R4, #+0]
+   \   00000034   0xB292             UXTH     R2,R2            ;; ZeroExt  R2,R2,#+16,#+16
+   \   00000036   0x42A2             CMP      R2,R4
+   \   00000038   0xF080 0x80AB      BCS.W    ??temp_Convert_2
+    335              {
+    336                  TempTableState = (u8)(Vt / 1000);
+   \   0000003C   0xB292             UXTH     R2,R2            ;; ZeroExt  R2,R2,#+16,#+16
+   \   0000003E   0xF44F 0x747A      MOV      R4,#+1000
+   \   00000042   0xFB92 0xF4F4      SDIV     R4,R2,R4
+   \   00000046   0x.... 0x....      LDR.W    R5,??DataTable8_16
+   \   0000004A   0x702C             STRB     R4,[R5, #+0]
+    337                  switch(TempTableState)
+   \   0000004C   0x.... 0x....      LDR.W    R4,??DataTable8_16
+   \   00000050   0x7824             LDRB     R4,[R4, #+0]
+   \   00000052   0x2C03             CMP      R4,#+3
+   \   00000054   0xD05A             BEQ.N    ??temp_Convert_3
+   \   00000056   0xD35B             BCC.N    ??temp_Convert_4
+   \   00000058   0x2C05             CMP      R4,#+5
+   \   0000005A   0xD051             BEQ.N    ??temp_Convert_5
+   \   0000005C   0xD353             BCC.N    ??temp_Convert_6
+   \   0000005E   0x2C07             CMP      R4,#+7
+   \   00000060   0xD048             BEQ.N    ??temp_Convert_7
+   \   00000062   0xD34A             BCC.N    ??temp_Convert_8
+   \   00000064   0x2C09             CMP      R4,#+9
+   \   00000066   0xD03F             BEQ.N    ??temp_Convert_9
+   \   00000068   0xD341             BCC.N    ??temp_Convert_10
+   \   0000006A   0x2C0B             CMP      R4,#+11
+   \   0000006C   0xD036             BEQ.N    ??temp_Convert_11
+   \   0000006E   0xD338             BCC.N    ??temp_Convert_12
+   \   00000070   0x2C0D             CMP      R4,#+13
+   \   00000072   0xD02D             BEQ.N    ??temp_Convert_13
+   \   00000074   0xD32F             BCC.N    ??temp_Convert_14
+   \   00000076   0x2C0F             CMP      R4,#+15
+   \   00000078   0xD024             BEQ.N    ??temp_Convert_15
+   \   0000007A   0xD326             BCC.N    ??temp_Convert_16
+   \   0000007C   0x2C11             CMP      R4,#+17
+   \   0000007E   0xD01B             BEQ.N    ??temp_Convert_17
+   \   00000080   0xD31D             BCC.N    ??temp_Convert_18
+   \   00000082   0x2C13             CMP      R4,#+19
+   \   00000084   0xD011             BEQ.N    ??temp_Convert_19
+   \   00000086   0xD314             BCC.N    ??temp_Convert_20
+   \   00000088   0x2C15             CMP      R4,#+21
+   \   0000008A   0xD006             BEQ.N    ??temp_Convert_21
+   \   0000008C   0xD309             BCC.N    ??temp_Convert_22
+   \   0000008E   0x2C16             CMP      R4,#+22
+   \   00000090   0xD13E             BNE.N    ??temp_Convert_4
+    338                  {
+    339                  case 22:
+    340                      i = -20;
+   \                     ??temp_Convert_23: (+1)
+   \   00000092   0xF07F 0x0413      MVNS     R4,#+19
+   \   00000096   0x0021             MOVS     R1,R4
+    341                      break;
+   \   00000098   0xE03A             B.N      ??temp_Convert_4
+    342                  case 21:
+    343                      i = -13;
+   \                     ??temp_Convert_21: (+1)
+   \   0000009A   0xF07F 0x040C      MVNS     R4,#+12
+   \   0000009E   0x0021             MOVS     R1,R4
+    344                      break;
+   \   000000A0   0xE036             B.N      ??temp_Convert_4
+    345                  case 20:
+    346                      i = -7;
+   \                     ??temp_Convert_22: (+1)
+   \   000000A2   0xF07F 0x0406      MVNS     R4,#+6
+   \   000000A6   0x0021             MOVS     R1,R4
+    347                      break;
+   \   000000A8   0xE032             B.N      ??temp_Convert_4
+    348                  case 19:
+    349                      i = -2;
+   \                     ??temp_Convert_19: (+1)
+   \   000000AA   0xF07F 0x0401      MVNS     R4,#+1
+   \   000000AE   0x0021             MOVS     R1,R4
+    350                      break;
+   \   000000B0   0xE02E             B.N      ??temp_Convert_4
+    351                  case 18:
+    352                      i = 2;
+   \                     ??temp_Convert_20: (+1)
+   \   000000B2   0x2402             MOVS     R4,#+2
+   \   000000B4   0x0021             MOVS     R1,R4
+    353                      break;
+   \   000000B6   0xE02B             B.N      ??temp_Convert_4
+    354                  case 17:
+    355                      i = 6;
+   \                     ??temp_Convert_17: (+1)
+   \   000000B8   0x2406             MOVS     R4,#+6
+   \   000000BA   0x0021             MOVS     R1,R4
+    356                      break;
+   \   000000BC   0xE028             B.N      ??temp_Convert_4
+    357                  case 16:
+    358                      i = 10;
+   \                     ??temp_Convert_18: (+1)
+   \   000000BE   0x240A             MOVS     R4,#+10
+   \   000000C0   0x0021             MOVS     R1,R4
+    359                      break;
+   \   000000C2   0xE025             B.N      ??temp_Convert_4
+    360                  case 15:
+    361                      i = 14;
+   \                     ??temp_Convert_15: (+1)
+   \   000000C4   0x240E             MOVS     R4,#+14
+   \   000000C6   0x0021             MOVS     R1,R4
+    362                      break;
+   \   000000C8   0xE022             B.N      ??temp_Convert_4
+    363                  case 14:
+    364                      i = 17;
+   \                     ??temp_Convert_16: (+1)
+   \   000000CA   0x2411             MOVS     R4,#+17
+   \   000000CC   0x0021             MOVS     R1,R4
+    365                      break;
+   \   000000CE   0xE01F             B.N      ??temp_Convert_4
+    366                  case 13:
+    367                      i = 20;
+   \                     ??temp_Convert_13: (+1)
+   \   000000D0   0x2414             MOVS     R4,#+20
+   \   000000D2   0x0021             MOVS     R1,R4
+    368                      break;
+   \   000000D4   0xE01C             B.N      ??temp_Convert_4
+    369                  case 12:
+    370                      i = 24;
+   \                     ??temp_Convert_14: (+1)
+   \   000000D6   0x2418             MOVS     R4,#+24
+   \   000000D8   0x0021             MOVS     R1,R4
+    371                      break;
+   \   000000DA   0xE019             B.N      ??temp_Convert_4
+    372                  case 11:
+    373                      i = 27;
+   \                     ??temp_Convert_11: (+1)
+   \   000000DC   0x241B             MOVS     R4,#+27
+   \   000000DE   0x0021             MOVS     R1,R4
+    374                      break;
+   \   000000E0   0xE016             B.N      ??temp_Convert_4
+    375                  case 10:
+    376                      i = 31;
+   \                     ??temp_Convert_12: (+1)
+   \   000000E2   0x241F             MOVS     R4,#+31
+   \   000000E4   0x0021             MOVS     R1,R4
+    377                      break;
+   \   000000E6   0xE013             B.N      ??temp_Convert_4
+    378                  case 9:
+    379                      i = 34;
+   \                     ??temp_Convert_9: (+1)
+   \   000000E8   0x2422             MOVS     R4,#+34
+   \   000000EA   0x0021             MOVS     R1,R4
+    380                      break;
+   \   000000EC   0xE010             B.N      ??temp_Convert_4
+    381                  case 8:
+    382                      i = 38;
+   \                     ??temp_Convert_10: (+1)
+   \   000000EE   0x2426             MOVS     R4,#+38
+   \   000000F0   0x0021             MOVS     R1,R4
+    383                      break;
+   \   000000F2   0xE00D             B.N      ??temp_Convert_4
+    384                  case 7:      
+    385                      i = 42;
+   \                     ??temp_Convert_7: (+1)
+   \   000000F4   0x242A             MOVS     R4,#+42
+   \   000000F6   0x0021             MOVS     R1,R4
+    386                      break;
+   \   000000F8   0xE00A             B.N      ??temp_Convert_4
+    387                  case 6:
+    388                      i = 47;
+   \                     ??temp_Convert_8: (+1)
+   \   000000FA   0x242F             MOVS     R4,#+47
+   \   000000FC   0x0021             MOVS     R1,R4
+    389                      break;
+   \   000000FE   0xE007             B.N      ??temp_Convert_4
+    390                  case 5:
+    391                      i = 52;
+   \                     ??temp_Convert_5: (+1)
+   \   00000100   0x2434             MOVS     R4,#+52
+   \   00000102   0x0021             MOVS     R1,R4
+    392                      break;
+   \   00000104   0xE004             B.N      ??temp_Convert_4
+    393                  case 4:
+    394                      i = 58;
+   \                     ??temp_Convert_6: (+1)
+   \   00000106   0x243A             MOVS     R4,#+58
+   \   00000108   0x0021             MOVS     R1,R4
+    395                      break;
+   \   0000010A   0xE001             B.N      ??temp_Convert_4
+    396                  case 3:
+    397                      i = 65;
+   \                     ??temp_Convert_3: (+1)
+   \   0000010C   0x2441             MOVS     R4,#+65
+   \   0000010E   0x0021             MOVS     R1,R4
+    398                      break;      
+    399                  }
+    400                  //
+    401                  while ((i < 70) & (Vt < TempTable[i+20]))  // i will be -20~70
+   \                     ??temp_Convert_4: (+1)
+   \   00000110   0xB249             SXTB     R1,R1            ;; SignExt  R1,R1,#+24,#+24
+   \   00000112   0x2946             CMP      R1,#+70
+   \   00000114   0xDA01             BGE.N    ??temp_Convert_24
+   \   00000116   0x2401             MOVS     R4,#+1
+   \   00000118   0xE000             B.N      ??temp_Convert_25
+   \                     ??temp_Convert_24: (+1)
+   \   0000011A   0x2400             MOVS     R4,#+0
+   \                     ??temp_Convert_25: (+1)
+   \   0000011C   0x....             LDR.N    R5,??DataTable8_15
+   \   0000011E   0xB249             SXTB     R1,R1            ;; SignExt  R1,R1,#+24,#+24
+   \   00000120   0xEB15 0x0541      ADDS     R5,R5,R1, LSL #+1
+   \   00000124   0x8D2D             LDRH     R5,[R5, #+40]
+   \   00000126   0xB292             UXTH     R2,R2            ;; ZeroExt  R2,R2,#+16,#+16
+   \   00000128   0x42AA             CMP      R2,R5
+   \   0000012A   0xD201             BCS.N    ??temp_Convert_26
+   \   0000012C   0x2501             MOVS     R5,#+1
+   \   0000012E   0xE000             B.N      ??temp_Convert_27
+   \                     ??temp_Convert_26: (+1)
+   \   00000130   0x2500             MOVS     R5,#+0
+   \                     ??temp_Convert_27: (+1)
+   \   00000132   0xB2E4             UXTB     R4,R4            ;; ZeroExt  R4,R4,#+24,#+24
+   \   00000134   0x422C             TST      R4,R5
+   \   00000136   0xD001             BEQ.N    ??temp_Convert_28
+    402                  {
+    403                      i++;
+   \   00000138   0x1C49             ADDS     R1,R1,#+1
+   \   0000013A   0xE7E9             B.N      ??temp_Convert_4
+    404                  }   
+    405                  i --;  // i is the integer part of TEMP 			
+   \                     ??temp_Convert_28: (+1)
+   \   0000013C   0x1E49             SUBS     R1,R1,#+1
+    406                  tmp = ((TempTable[i+20] - Vt)*100) / (TempTable[i+20] - TempTable[i+21]); // rational part 
+   \   0000013E   0x....             LDR.N    R4,??DataTable8_15
+   \   00000140   0xB249             SXTB     R1,R1            ;; SignExt  R1,R1,#+24,#+24
+   \   00000142   0xEB14 0x0441      ADDS     R4,R4,R1, LSL #+1
+   \   00000146   0x8D24             LDRH     R4,[R4, #+40]
+   \   00000148   0xB292             UXTH     R2,R2            ;; ZeroExt  R2,R2,#+16,#+16
+   \   0000014A   0x1AA4             SUBS     R4,R4,R2
+   \   0000014C   0x2564             MOVS     R5,#+100
+   \   0000014E   0x436C             MULS     R4,R5,R4
+   \   00000150   0x....             LDR.N    R5,??DataTable8_15
+   \   00000152   0xB249             SXTB     R1,R1            ;; SignExt  R1,R1,#+24,#+24
+   \   00000154   0xEB15 0x0541      ADDS     R5,R5,R1, LSL #+1
+   \   00000158   0x8D2D             LDRH     R5,[R5, #+40]
+   \   0000015A   0x....             LDR.N    R6,??DataTable8_15
+   \   0000015C   0xB249             SXTB     R1,R1            ;; SignExt  R1,R1,#+24,#+24
+   \   0000015E   0xEB16 0x0641      ADDS     R6,R6,R1, LSL #+1
+   \   00000162   0x8D76             LDRH     R6,[R6, #+42]
+   \   00000164   0x1BAD             SUBS     R5,R5,R6
+   \   00000166   0xFB94 0xF4F5      SDIV     R4,R4,R5
+   \   0000016A   0x0023             MOVS     R3,R4
+    407                  Temp = (float) tmp / 100;
+   \   0000016C   0xB29B             UXTH     R3,R3            ;; ZeroExt  R3,R3,#+16,#+16
+   \   0000016E   0xEE00 0x3A90      VMOV     S1,R3
+   \   00000172   0xEEF8 0x0A60      VCVT.F32.U32 S1,S1
+   \   00000176   0xED9F 0x....      VLDR.W   S2,??DataTable6  ;; 0x42c80000
+   \   0000017A   0xEEC0 0x0A81      VDIV.F32 S1,S1,S2
+   \   0000017E   0xEEB0 0x0A60      VMOV.F32 S0,S1
+    408                  Temp += i;	
+   \   00000182   0xB249             SXTB     R1,R1            ;; SignExt  R1,R1,#+24,#+24
+   \   00000184   0xEE00 0x1A90      VMOV     S1,R1
+   \   00000188   0xEEF8 0x0AE0      VCVT.F32.S32 S1,S1
+   \   0000018C   0xEE30 0x0A80      VADD.F32 S0,S1,S0
+   \   00000190   0xE003             B.N      ??temp_Convert_1
+    409              }
+    410              //--------------------------------------
+    411              else
+    412              {
+    413                  Temp = -20.00;
+   \                     ??temp_Convert_2: (+1)
+   \   00000192   0xEEFB 0x0A04      VMOV.F32 S1,#-20.0
+   \   00000196   0xEEB0 0x0A60      VMOV.F32 S0,S1
+    414              }
+    415              return Temp;
+   \                     ??temp_Convert_1: (+1)
+   \   0000019A   0xBC70             POP      {R4-R6}
+   \   0000019C   0x4770             BX       LR               ;; return
+    416          }
+
+   \                                 In section .bss, align 1
+   \                     ??TempTableState:
+   \   00000000                      DS8 1
+    417          /*************************** temp Convert **************************************/
+    418          //----------------------------------------------------
+
+   \                                 In section .text, align 2, keep-with-next
+    419          FunctionalState     I2C_Start(I2C_TypeDef* I2Cx, u8 address, u8 direction, u8 ack) 
+    420          {
+   \                     I2C_Start: (+1)
+   \   00000000   0xE92D 0x43F8      PUSH     {R3-R9,LR}
+   \   00000004   0x0004             MOVS     R4,R0
+   \   00000006   0x000D             MOVS     R5,R1
+   \   00000008   0x0016             MOVS     R6,R2
+   \   0000000A   0x001F             MOVS     R7,R3
+    421              u16                         I2C_Timeout;
+    422              FunctionalState             checkStatr = ENABLE;
+   \   0000000C   0xF05F 0x0901      MOVS     R9,#+1
+    423              /* Generate I2C start pulse */
+    424              I2Cx->CR1 |= I2C_CR1_START;    
+   \   00000010   0x8820             LDRH     R0,[R4, #+0]
+   \   00000012   0xF450 0x7080      ORRS     R0,R0,#0x100
+   \   00000016   0x8020             STRH     R0,[R4, #+0]
+    425              /* Wait till I2C is busy */
+    426              I2C_Timeout = I2C_TIMEOUT;
+   \   00000018   0xF247 0x5030      MOVW     R0,#+30000
+   \   0000001C   0x4680             MOV      R8,R0
+    427              while (!(I2Cx->SR1 & I2C_SR1_SB)) 
+   \                     ??I2C_Start_0: (+1)
+   \   0000001E   0x8AA0             LDRH     R0,[R4, #+20]
+   \   00000020   0x07C0             LSLS     R0,R0,#+31
+   \   00000022   0xD408             BMI.N    ??I2C_Start_1
+    428              {
+    429                  if (--I2C_Timeout == 0x00) 
+   \   00000024   0xF1B8 0x0801      SUBS     R8,R8,#+1
+   \   00000028   0xFA1F 0xF888      UXTH     R8,R8            ;; ZeroExt  R8,R8,#+16,#+16
+   \   0000002C   0xF1B8 0x0F00      CMP      R8,#+0
+   \   00000030   0xD1F5             BNE.N    ??I2C_Start_0
+    430                  {
+    431                      checkStatr = DISABLE; //data = 1;
+   \   00000032   0x2000             MOVS     R0,#+0
+   \   00000034   0x4681             MOV      R9,R0
+    432                      break;//error return 1;
+    433                  }
+    434              }    
+    435              /* Enable ack if we select it */
+    436              if (ack) 
+   \                     ??I2C_Start_1: (+1)
+   \   00000036   0xB2FF             UXTB     R7,R7            ;; ZeroExt  R7,R7,#+24,#+24
+   \   00000038   0x2F00             CMP      R7,#+0
+   \   0000003A   0xD003             BEQ.N    ??I2C_Start_2
+    437              {
+    438                  I2Cx->CR1 |= I2C_CR1_ACK;
+   \   0000003C   0x8820             LDRH     R0,[R4, #+0]
+   \   0000003E   0xF450 0x6080      ORRS     R0,R0,#0x400
+   \   00000042   0x8020             STRH     R0,[R4, #+0]
+    439              }    
+    440              /* Send write/read bit */
+    441              if (direction == I2C_TRANSMITTER_MODE) 
+   \                     ??I2C_Start_2: (+1)
+   \   00000044   0xB2F6             UXTB     R6,R6            ;; ZeroExt  R6,R6,#+24,#+24
+   \   00000046   0x2E00             CMP      R6,#+0
+   \   00000048   0xD113             BNE.N    ??I2C_Start_3
+    442              {
+    443                  /* Send address with zero last bit */
+    444                  I2Cx->DR = address & ~I2C_OAR1_ADD0;        
+   \   0000004A   0xB2ED             UXTB     R5,R5            ;; ZeroExt  R5,R5,#+24,#+24
+   \   0000004C   0xF64F 0x70FE      MOVW     R0,#+65534
+   \   00000050   0x4028             ANDS     R0,R0,R5
+   \   00000052   0x8220             STRH     R0,[R4, #+16]
+    445                  /* Wait till finished */
+    446                  I2C_Timeout = I2C_TIMEOUT;
+   \   00000054   0xF247 0x5030      MOVW     R0,#+30000
+   \   00000058   0x4680             MOV      R8,R0
+    447                  while (!(I2Cx->SR1 & I2C_SR1_ADDR)) 
+   \                     ??I2C_Start_4: (+1)
+   \   0000005A   0x8AA0             LDRH     R0,[R4, #+20]
+   \   0000005C   0x0780             LSLS     R0,R0,#+30
+   \   0000005E   0xD408             BMI.N    ??I2C_Start_3
+    448                  {
+    449                      if (--I2C_Timeout == 0x00) 
+   \   00000060   0xF1B8 0x0801      SUBS     R8,R8,#+1
+   \   00000064   0xFA1F 0xF888      UXTH     R8,R8            ;; ZeroExt  R8,R8,#+16,#+16
+   \   00000068   0xF1B8 0x0F00      CMP      R8,#+0
+   \   0000006C   0xD1F5             BNE.N    ??I2C_Start_4
+    450                      {
+    451                          checkStatr = DISABLE; //data = 1;
+   \   0000006E   0x2000             MOVS     R0,#+0
+   \   00000070   0x4681             MOV      R9,R0
+    452                          break;//error return 1;
+    453                      }
+    454                  }
+    455              }
+    456              if (direction == I2C_RECEIVER_MODE) 
+   \                     ??I2C_Start_3: (+1)
+   \   00000072   0xB2F6             UXTB     R6,R6            ;; ZeroExt  R6,R6,#+24,#+24
+   \   00000074   0x2E01             CMP      R6,#+1
+   \   00000076   0xD115             BNE.N    ??I2C_Start_5
+    457              {
+    458                  /* Send address with 1 last bit */
+    459                  I2Cx->DR = address | I2C_OAR1_ADD0;
+   \   00000078   0xB2ED             UXTB     R5,R5            ;; ZeroExt  R5,R5,#+24,#+24
+   \   0000007A   0xF055 0x0001      ORRS     R0,R5,#0x1
+   \   0000007E   0x8220             STRH     R0,[R4, #+16]
+    460                  
+    461                  /* Wait till finished */
+    462                  I2C_Timeout = I2C_TIMEOUT;
+   \   00000080   0xF247 0x5030      MOVW     R0,#+30000
+   \   00000084   0x4680             MOV      R8,R0
+    463                  while (!I2C_CheckEvent(I2Cx, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED)) 
+   \                     ??I2C_Start_6: (+1)
+   \   00000086   0x....             LDR.N    R1,??DataTable8_17  ;; 0x30002
+   \   00000088   0x0020             MOVS     R0,R4
+   \   0000008A   0x.... 0x....      BL       I2C_CheckEvent
+   \   0000008E   0x2800             CMP      R0,#+0
+   \   00000090   0xD108             BNE.N    ??I2C_Start_5
+    464                  {
+    465                      if (--I2C_Timeout == 0x00) 
+   \   00000092   0xF1B8 0x0801      SUBS     R8,R8,#+1
+   \   00000096   0xFA1F 0xF888      UXTH     R8,R8            ;; ZeroExt  R8,R8,#+16,#+16
+   \   0000009A   0xF1B8 0x0F00      CMP      R8,#+0
+   \   0000009E   0xD1F2             BNE.N    ??I2C_Start_6
+    466                      {
+    467                          checkStatr = DISABLE; //data = 1;
+   \   000000A0   0x2000             MOVS     R0,#+0
+   \   000000A2   0x4681             MOV      R9,R0
+    468                          break;//error return 1;
+    469                      }
+    470                  }
+    471              }   
+    472              /* Read status register to clear ADDR flag */
+    473              I2Cx->SR2;
+   \                     ??I2C_Start_5: (+1)
+   \   000000A4   0x8B20             LDRH     R0,[R4, #+24]
+    474              
+    475              /* Return ENABLE, everything ok */
+    476              return checkStatr;
+   \   000000A6   0x4648             MOV      R0,R9
+   \   000000A8   0xB2C0             UXTB     R0,R0            ;; ZeroExt  R0,R0,#+24,#+24
+   \   000000AA   0xE8BD 0x83F2      POP      {R1,R4-R9,PC}    ;; return
+    477          }
+    478          //----------------------------------------------------
+
+   \                                 In section .text, align 2, keep-with-next
+    479          void    I2C_WriteData(I2C_TypeDef* I2Cx, u8 data) 
+    480          {
+    481              u16         I2C_Timeout;
+    482              /* Wait till I2C is not busy anymore */
+    483              I2C_Timeout = I2C_TIMEOUT;
+   \                     I2C_WriteData: (+1)
+   \   00000000   0xF247 0x5330      MOVW     R3,#+30000
+   \   00000004   0x001A             MOVS     R2,R3
+    484              while (!(I2Cx->SR1 & I2C_SR1_TXE) && I2C_Timeout) 
+   \                     ??I2C_WriteData_0: (+1)
+   \   00000006   0x8A83             LDRH     R3,[R0, #+20]
+   \   00000008   0x061B             LSLS     R3,R3,#+24
+   \   0000000A   0xD404             BMI.N    ??I2C_WriteData_1
+   \   0000000C   0xB292             UXTH     R2,R2            ;; ZeroExt  R2,R2,#+16,#+16
+   \   0000000E   0x2A00             CMP      R2,#+0
+   \   00000010   0xD001             BEQ.N    ??I2C_WriteData_1
+    485              {
+    486                  I2C_Timeout--;
+   \   00000012   0x1E52             SUBS     R2,R2,#+1
+   \   00000014   0xE7F7             B.N      ??I2C_WriteData_0
+    487              }    
+    488              /* Send I2C data */
+    489              I2Cx->DR = data;
+   \                     ??I2C_WriteData_1: (+1)
+   \   00000016   0xB2C9             UXTB     R1,R1            ;; ZeroExt  R1,R1,#+24,#+24
+   \   00000018   0x8201             STRH     R1,[R0, #+16]
+    490          }
+   \   0000001A   0x4770             BX       LR               ;; return
+    491          //----------------------------------------------------
+
+   \                                 In section .text, align 2, keep-with-next
+    492          void    I2C_ReadMulti(I2C_TypeDef* I2Cx, u8 address, u8 reg, u8* data, u16 count) 
+    493          {
+   \                     I2C_ReadMulti: (+1)
+   \   00000000   0xE92D 0x41F0      PUSH     {R4-R8,LR}
+   \   00000004   0x0005             MOVS     R5,R0
+   \   00000006   0x000E             MOVS     R6,R1
+   \   00000008   0x0017             MOVS     R7,R2
+   \   0000000A   0x4698             MOV      R8,R3
+   \   0000000C   0x9C06             LDR      R4,[SP, #+24]
+    494              I2C_Start(I2Cx, address, I2C_TRANSMITTER_MODE, I2C_ACK_ENABLE);
+   \   0000000E   0x2301             MOVS     R3,#+1
+   \   00000010   0x2200             MOVS     R2,#+0
+   \   00000012   0x0031             MOVS     R1,R6
+   \   00000014   0xB2C9             UXTB     R1,R1            ;; ZeroExt  R1,R1,#+24,#+24
+   \   00000016   0x0028             MOVS     R0,R5
+   \   00000018   0x.... 0x....      BL       I2C_Start
+    495              I2C_WriteData(I2Cx, reg);
+   \   0000001C   0x0039             MOVS     R1,R7
+   \   0000001E   0xB2C9             UXTB     R1,R1            ;; ZeroExt  R1,R1,#+24,#+24
+   \   00000020   0x0028             MOVS     R0,R5
+   \   00000022   0x.... 0x....      BL       I2C_WriteData
+    496              //TM_I2C_Stop(I2Cx);
+    497              I2C_Start(I2Cx, address, I2C_RECEIVER_MODE, I2C_ACK_ENABLE);
+   \   00000026   0x2301             MOVS     R3,#+1
+   \   00000028   0x2201             MOVS     R2,#+1
+   \   0000002A   0x0031             MOVS     R1,R6
+   \   0000002C   0xB2C9             UXTB     R1,R1            ;; ZeroExt  R1,R1,#+24,#+24
+   \   0000002E   0x0028             MOVS     R0,R5
+   \   00000030   0x.... 0x....      BL       I2C_Start
+    498              while (count--) 
+   \                     ??I2C_ReadMulti_0: (+1)
+   \   00000034   0x0020             MOVS     R0,R4
+   \   00000036   0x1E44             SUBS     R4,R0,#+1
+   \   00000038   0xB280             UXTH     R0,R0            ;; ZeroExt  R0,R0,#+16,#+16
+   \   0000003A   0x2800             CMP      R0,#+0
+   \   0000003C   0xD012             BEQ.N    ??I2C_ReadMulti_1
+    499              {
+    500                  if (!count) 
+   \   0000003E   0xB2A4             UXTH     R4,R4            ;; ZeroExt  R4,R4,#+16,#+16
+   \   00000040   0x2C00             CMP      R4,#+0
+   \   00000042   0xD107             BNE.N    ??I2C_ReadMulti_2
+    501                  {
+    502                      /* Last byte */
+    503                      *data++ = I2C_ReadNack(I2Cx);
+   \   00000044   0x0028             MOVS     R0,R5
+   \   00000046   0x.... 0x....      BL       I2C_ReadNack
+   \   0000004A   0xF888 0x0000      STRB     R0,[R8, #+0]
+   \   0000004E   0xF118 0x0801      ADDS     R8,R8,#+1
+   \   00000052   0xE7EF             B.N      ??I2C_ReadMulti_0
+    504                  } 
+    505                  else 
+    506                  {
+    507                      *data++ = I2C_ReadAck(I2Cx);
+   \                     ??I2C_ReadMulti_2: (+1)
+   \   00000054   0x0028             MOVS     R0,R5
+   \   00000056   0x.... 0x....      BL       I2C_ReadAck
+   \   0000005A   0xF888 0x0000      STRB     R0,[R8, #+0]
+   \   0000005E   0xF118 0x0801      ADDS     R8,R8,#+1
+   \   00000062   0xE7E7             B.N      ??I2C_ReadMulti_0
+    508                  }
+    509              }
+    510          }
+   \                     ??I2C_ReadMulti_1: (+1)
+   \   00000064   0xE8BD 0x81F0      POP      {R4-R8,PC}       ;; return
+    511          //----------------------------------------------------
+
+   \                                 In section .text, align 2, keep-with-next
+    512          u8      I2C_ReadAck(I2C_TypeDef* I2Cx) 
+    513          {
+   \                     I2C_ReadAck: (+1)
+   \   00000000   0xB570             PUSH     {R4-R6,LR}
+   \   00000002   0x0004             MOVS     R4,R0
+    514              u8          data = 0;
+   \   00000004   0x2500             MOVS     R5,#+0
+    515              u16         I2C_Timeout;
+    516              /* Enable ACK */
+    517              I2Cx->CR1 |= I2C_CR1_ACK;    
+   \   00000006   0x8820             LDRH     R0,[R4, #+0]
+   \   00000008   0xF450 0x6080      ORRS     R0,R0,#0x400
+   \   0000000C   0x8020             STRH     R0,[R4, #+0]
+    518              /* Wait till not received */
+    519              I2C_Timeout = I2C_TIMEOUT;
+   \   0000000E   0xF247 0x5030      MOVW     R0,#+30000
+   \   00000012   0x0006             MOVS     R6,R0
+    520              while (!I2C_CheckEvent(I2Cx, I2C_EVENT_MASTER_BYTE_RECEIVED)) 
+   \                     ??I2C_ReadAck_0: (+1)
+   \   00000014   0x....             LDR.N    R1,??DataTable8_18  ;; 0x30040
+   \   00000016   0x0020             MOVS     R0,R4
+   \   00000018   0x.... 0x....      BL       I2C_CheckEvent
+   \   0000001C   0x2800             CMP      R0,#+0
+   \   0000001E   0xD105             BNE.N    ??I2C_ReadAck_1
+    521              {
+    522                  if (--I2C_Timeout == 0x00) 
+   \   00000020   0x1E76             SUBS     R6,R6,#+1
+   \   00000022   0xB2B6             UXTH     R6,R6            ;; ZeroExt  R6,R6,#+16,#+16
+   \   00000024   0x2E00             CMP      R6,#+0
+   \   00000026   0xD1F5             BNE.N    ??I2C_ReadAck_0
+    523                  {
+    524                      data = 1;
+   \   00000028   0x2001             MOVS     R0,#+1
+   \   0000002A   0x0005             MOVS     R5,R0
+    525                      break;//error
+    526                  }
+    527              }    
+    528              /* Read data */
+    529              data = I2Cx->DR;    
+   \                     ??I2C_ReadAck_1: (+1)
+   \   0000002C   0x8A20             LDRH     R0,[R4, #+16]
+   \   0000002E   0x0005             MOVS     R5,R0
+    530              /* Return data */
+    531              return data;
+   \   00000030   0x0028             MOVS     R0,R5
+   \   00000032   0xB2C0             UXTB     R0,R0            ;; ZeroExt  R0,R0,#+24,#+24
+   \   00000034   0xBD70             POP      {R4-R6,PC}       ;; return
+    532          }
+    533          //----------------------------------------------------
+
+   \                                 In section .text, align 2, keep-with-next
+    534          u8      I2C_ReadNack(I2C_TypeDef* I2Cx) 
+    535          {
+   \                     I2C_ReadNack: (+1)
+   \   00000000   0xB570             PUSH     {R4-R6,LR}
+   \   00000002   0x0004             MOVS     R4,R0
+    536              u8          data = 0;
+   \   00000004   0x2500             MOVS     R5,#+0
+    537              u16         I2C_Timeout;
+    538              /* Disable ACK */
+    539              I2Cx->CR1 &= ~I2C_CR1_ACK;   
+   \   00000006   0x8820             LDRH     R0,[R4, #+0]
+   \   00000008   0xF64F 0x31FF      MOVW     R1,#+64511
+   \   0000000C   0x4008             ANDS     R0,R1,R0
+   \   0000000E   0x8020             STRH     R0,[R4, #+0]
+    540              /* Generate stop */
+    541              I2Cx->CR1 |= I2C_CR1_STOP;    
+   \   00000010   0x8820             LDRH     R0,[R4, #+0]
+   \   00000012   0xF450 0x7000      ORRS     R0,R0,#0x200
+   \   00000016   0x8020             STRH     R0,[R4, #+0]
+    542              /* Wait till received */
+    543              I2C_Timeout = I2C_TIMEOUT;
+   \   00000018   0xF247 0x5030      MOVW     R0,#+30000
+   \   0000001C   0x0006             MOVS     R6,R0
+    544              while (!I2C_CheckEvent(I2Cx, I2C_EVENT_MASTER_BYTE_RECEIVED)) 
+   \                     ??I2C_ReadNack_0: (+1)
+   \   0000001E   0x....             LDR.N    R1,??DataTable8_18  ;; 0x30040
+   \   00000020   0x0020             MOVS     R0,R4
+   \   00000022   0x.... 0x....      BL       I2C_CheckEvent
+   \   00000026   0x2800             CMP      R0,#+0
+   \   00000028   0xD105             BNE.N    ??I2C_ReadNack_1
+    545              {
+    546                  if (--I2C_Timeout == 0x00) 
+   \   0000002A   0x1E76             SUBS     R6,R6,#+1
+   \   0000002C   0xB2B6             UXTH     R6,R6            ;; ZeroExt  R6,R6,#+16,#+16
+   \   0000002E   0x2E00             CMP      R6,#+0
+   \   00000030   0xD1F5             BNE.N    ??I2C_ReadNack_0
+    547                  {
+    548                      data = 1;
+   \   00000032   0x2001             MOVS     R0,#+1
+   \   00000034   0x0005             MOVS     R5,R0
+    549                      break;//error
+    550                  }
+    551              }
+    552              /* Read data */
+    553              data = I2Cx->DR;   
+   \                     ??I2C_ReadNack_1: (+1)
+   \   00000036   0x8A20             LDRH     R0,[R4, #+16]
+   \   00000038   0x0005             MOVS     R5,R0
+    554              /* Return data */
+    555              return data;
+   \   0000003A   0x0028             MOVS     R0,R5
+   \   0000003C   0xB2C0             UXTB     R0,R0            ;; ZeroExt  R0,R0,#+24,#+24
+   \   0000003E   0xBD70             POP      {R4-R6,PC}       ;; return
+    556          }
+    557          //----------------------------------------------------
+
+   \                                 In section .text, align 2, keep-with-next
+    558          FunctionalState      I2C_CheckConnect(I2C_TypeDef* I2Cx, u8 address) 
+    559          {
+   \                     I2C_CheckConnect: (+1)
+   \   00000000   0xB570             PUSH     {R4-R6,LR}
+   \   00000002   0x0004             MOVS     R4,R0
+   \   00000004   0x000D             MOVS     R5,R1
+    560              FunctionalState     status_ = ENABLE;
+   \   00000006   0x2601             MOVS     R6,#+1
+    561              /* Try to start, function will return 0 in case device will send ACK */
+    562              if (! I2C_Start(I2Cx, address, I2C_TRANSMITTER_MODE, I2C_ACK_ENABLE)) 
+   \   00000008   0x2301             MOVS     R3,#+1
+   \   0000000A   0x2200             MOVS     R2,#+0
+   \   0000000C   0x0029             MOVS     R1,R5
+   \   0000000E   0xB2C9             UXTB     R1,R1            ;; ZeroExt  R1,R1,#+24,#+24
+   \   00000010   0x0020             MOVS     R0,R4
+   \   00000012   0x.... 0x....      BL       I2C_Start
+   \   00000016   0x2800             CMP      R0,#+0
+   \   00000018   0xD101             BNE.N    ??I2C_CheckConnect_0
+    563              {
+    564                  status_ = DISABLE;//
+   \   0000001A   0x2000             MOVS     R0,#+0
+   \   0000001C   0x0006             MOVS     R6,R0
+    565              }
+    566              
+    567              /* STOP I2C */
+    568              I2C_Stop(I2Cx);
+   \                     ??I2C_CheckConnect_0: (+1)
+   \   0000001E   0x0020             MOVS     R0,R4
+   \   00000020   0x.... 0x....      BL       I2C_Stop
+    569              
+    570              /* Return status */
+    571              return status_;
+   \   00000024   0x0030             MOVS     R0,R6
+   \   00000026   0xB2C0             UXTB     R0,R0            ;; ZeroExt  R0,R0,#+24,#+24
+   \   00000028   0xBD70             POP      {R4-R6,PC}       ;; return
+    572          }
+    573          //----------------------------------------------------
+
+   \                                 In section .text, align 2, keep-with-next
+    574          FunctionalState         I2C_Stop(I2C_TypeDef* I2Cx) 
+    575          {
+   \                     I2C_Stop: (+1)
+   \   00000000   0x0001             MOVS     R1,R0
+    576              FunctionalState             data = ENABLE;
+   \   00000002   0x2001             MOVS     R0,#+1
+    577              u16                         I2C_Timeout =0;
+   \   00000004   0x2200             MOVS     R2,#+0
+    578              /* Wait till transmitter not empty */
+    579          	I2C_Timeout = I2C_TIMEOUT;
+   \   00000006   0xF247 0x5330      MOVW     R3,#+30000
+   \   0000000A   0x001A             MOVS     R2,R3
+    580          	while (((!(I2Cx->SR1 & I2C_SR1_TXE)) || (!(I2Cx->SR1 & I2C_SR1_BTF)))) 
+   \                     ??I2C_Stop_0: (+1)
+   \   0000000C   0x8A8B             LDRH     R3,[R1, #+20]
+   \   0000000E   0x061B             LSLS     R3,R3,#+24
+   \   00000010   0xD502             BPL.N    ??I2C_Stop_1
+   \   00000012   0x8A8B             LDRH     R3,[R1, #+20]
+   \   00000014   0x075B             LSLS     R3,R3,#+29
+   \   00000016   0xD405             BMI.N    ??I2C_Stop_2
+    581                  {
+    582          		if (--I2C_Timeout == 0x00) 
+   \                     ??I2C_Stop_1: (+1)
+   \   00000018   0x1E52             SUBS     R2,R2,#+1
+   \   0000001A   0xB292             UXTH     R2,R2            ;; ZeroExt  R2,R2,#+16,#+16
+   \   0000001C   0x2A00             CMP      R2,#+0
+   \   0000001E   0xD1F5             BNE.N    ??I2C_Stop_0
+    583                          {
+    584          			data = DISABLE;
+   \   00000020   0x2300             MOVS     R3,#+0
+   \   00000022   0x0018             MOVS     R0,R3
+    585                                  break;
+    586          		}
+    587          	}
+    588          	
+    589          	/* Generate stop */
+    590          	I2Cx->CR1 |= I2C_CR1_STOP;
+   \                     ??I2C_Stop_2: (+1)
+   \   00000024   0x880B             LDRH     R3,[R1, #+0]
+   \   00000026   0xF453 0x7300      ORRS     R3,R3,#0x200
+   \   0000002A   0x800B             STRH     R3,[R1, #+0]
+    591          	
+    592          	/* Return ENABLE, everything ok */
+    593          	return data;
+   \   0000002C   0xB2C0             UXTB     R0,R0            ;; ZeroExt  R0,R0,#+24,#+24
+   \   0000002E   0x4770             BX       LR               ;; return
+    594          }
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable3:
+   \   00000000   0x447A0000         DC32     0x447a0000
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable3_1:
+   \   00000000   0x42C80000         DC32     0x42c80000
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable4:
+   \   00000000   0x00000000         DC32     0x0,0x40080000
+   \              0x40080000   
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable4_1:
+   \   00000000   0xC1A8E148         DC32     0xc1a8e148
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable4_2:
+   \   00000000   0x41A8E148         DC32     0x41a8e148
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable5:
+   \   00000000   0x00000000         DC32     0x0,0x40140000
+   \              0x40140000   
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable6:
+   \   00000000   0x42C80000         DC32     0x42c80000
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable6_1:
+   \   00000000   0x00000000         DC32     0x0
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable6_2:
+   \   00000000   0x40005400         DC32     0x40005400
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable6_3:
+   \   00000000   0x........         DC32     TSI_FlowROM
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable6_4:
+   \   00000000   0x40005800         DC32     0x40005800
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable7:
+   \   00000000   0x428C0000         DC32     0x428c0000
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable8:
+   \   00000000   0x........         DC32     DATA_Sensors
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable8_1:
+   \   00000000   0x........         DC32     Flow_E2Prom_ADD
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable8_2:
+   \   00000000   0x000CD349         DC32     0xcd349
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable8_3:
+   \   00000000   0x000CD34A         DC32     0xcd34a
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable8_4:
+   \   00000000   0x........         DC32     ??CRC_temp
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable8_5:
+   \   00000000   0x........         DC32     VA2dExt_Data
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable8_6:
+   \   00000000   0x........         DC32     Vf
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable8_7:
+   \   00000000   0x........         DC32     Vt
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable8_8:
+   \   00000000   0x........         DC32     fVf
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable8_9:
+   \   00000000   0x........         DC32     fVt
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable8_10:
+   \   00000000   0xC0500000         DC32     0xc0500000
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable8_11:
+   \   00000000   0x78D4FDF4         DC32     0x78d4fdf4
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable8_12:
+   \   00000000   0x409024E9         DC32     0x409024e9
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable8_13:
+   \   00000000   0x3F141206         DC32     0x3f141206
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable8_14:
+   \   00000000   0x3FF0DCC6         DC32     0x3ff0dcc6
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable8_15:
+   \   00000000   0x........         DC32     TempTable
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable8_16:
+   \   00000000   0x........         DC32     ??TempTableState
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable8_17:
+   \   00000000   0x00030002         DC32     0x30002
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable8_18:
+   \   00000000   0x00030040         DC32     0x30040
+    595          //----------------------------------------------------
+    596          
+    597          
+    598          
+
+   Maximum stack usage in bytes:
+
+   .cstack Function
+   ------- --------
+       0   CRC_Calculation
+     608   Flow_TSI_Initialize
+       608   -> I2C_EE_BufferRead
+       8   Flow_TSI_Service
+         8   -> flow_calculation
+      16   I2C_CheckConnect
+        16   -> I2C_Start
+        16   -> I2C_Stop
+      40   I2C_EE_BufferRead
+        40   -> I2C_ReadMulti
+      16   I2C_ReadAck
+        16   -> I2C_CheckEvent
+      24   I2C_ReadMulti
+        24   -> I2C_ReadAck
+        24   -> I2C_ReadNack
+        24   -> I2C_Start
+        24   -> I2C_WriteData
+      16   I2C_ReadNack
+        16   -> I2C_CheckEvent
+      32   I2C_Start
+        32   -> I2C_CheckEvent
+       0   I2C_Stop
+       0   I2C_WriteData
+      56   flow_calculation
+        56   -> __aeabi_d2f
+        56   -> __aeabi_dadd
+        56   -> __aeabi_ddiv
+        56   -> __aeabi_dmul
+        56   -> __aeabi_f2d
+        56   -> pow
+        56   -> sqrt
+        56   -> temp_Convert
+      12   temp_Convert
+
+
+   Section sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+       4  ??DataTable3
+       4  ??DataTable3_1
+       8  ??DataTable4
+       4  ??DataTable4_1
+       4  ??DataTable4_2
+       8  ??DataTable5
+       4  ??DataTable6
+       4  ??DataTable6_1
+       4  ??DataTable6_2
+       4  ??DataTable6_3
+       4  ??DataTable6_4
+       4  ??DataTable7
+       4  ??DataTable8
+       4  ??DataTable8_1
+       4  ??DataTable8_10
+       4  ??DataTable8_11
+       4  ??DataTable8_12
+       4  ??DataTable8_13
+       4  ??DataTable8_14
+       4  ??DataTable8_15
+       4  ??DataTable8_16
+       4  ??DataTable8_17
+       4  ??DataTable8_18
+       4  ??DataTable8_2
+       4  ??DataTable8_3
+       4  ??DataTable8_4
+       4  ??DataTable8_5
+       4  ??DataTable8_6
+       4  ??DataTable8_7
+       4  ??DataTable8_8
+       4  ??DataTable8_9
+       1  ADD_EErom
+       1  BYTE_rom
+      96  CRC_Calculation
+       2  CRC_temp
+       1  En_ADD
+      88  Flow_E2Prom_ADD
+     226  Flow_TSI_Initialize
+     300  Flow_TSI_Service
+      42  I2C_CheckConnect
+    1146  I2C_EE_BufferRead
+      54  I2C_ReadAck
+     104  I2C_ReadMulti
+      64  I2C_ReadNack
+     174  I2C_Start
+      48  I2C_Stop
+      28  I2C_WriteData
+       2  TM_I2C_Timeout
+     616  TSI_FlowROM
+     180  TempTable
+       1  TempTableState
+       4  Vf
+       4  Vt
+       8  fVf
+       8  fVt
+    1002  flow_calculation
+       1  index1
+     414  temp_Convert
+
+ 
+   649 bytes in section .bss
+   268 bytes in section .rodata
+ 3 830 bytes in section .text
+ 
+ 3 830 bytes of CODE  memory
+   268 bytes of CONST memory
+   649 bytes of DATA  memory
+
+Errors: none
+Warnings: none

@@ -1,0 +1,849 @@
+###############################################################################
+#                                                                             #
+#     IAR Assembler V7.40.3.8902/W32 for ARM 05/Nov/2025  15:02:25            #
+#     Copyright 1999-2015 IAR Systems AB.                                     #
+#                                                                             #
+#           Source file   =  D:\Turbo Fan\Codes\14030723 BLDC-valve2 added\startup\startup_stm32f40xx.s#
+#           List file     =  D:\Turbo Fan\Codes\14030723 BLDC-valve2 added\Debug\List\startup_stm32f40xx.lst#
+#           Object file   =  D:\Turbo Fan\Codes\14030723 BLDC-valve2 added\Debug\Obj\startup_stm32f40xx.o#
+#           Command line  =  D:\Turbo Fan\Codes\14030723 BLDC-valve2 added\startup\startup_stm32f40xx.s #
+#                            -OD:\Turbo Fan\Codes\14030723 BLDC-valve2 added\Debug\Obj\ #
+#                            -s+ -M<> -w+ -r                                  #
+#                            -LD:\Turbo Fan\Codes\14030723 BLDC-valve2 added\Debug\List\ #
+#                            -t8 --cpu Cortex-M4 --fpu VFPv4_sp               #
+#                                                                             #
+###############################################################################
+
+    1                           ;/******************** (C) COPYRIGHT 2013
+                                 STMicroelectronics ********************
+    2                           ;* File Name          : startup_stm32f40xx.s
+    3                           ;* Author             : MCD Application
+                                 Team
+    4                           ;* Version            : V1.3.0
+    5                           ;* Date               : 08-November-2013
+    6                           ;* Description        : STM32F40xxx/41xxx
+                                 devices vector table for EWARM toolchain.
+    7                           ;*                      Same as startup_stm32f
+                                40_41xxx.s and maintained for legacy purpose
+    8                           ;*                      This module performs:
+    9                           ;*                      - Set the initial
+                                 SP
+   10                           ;*                      - Set the initial PC
+                                 == _iar_program_start,
+   11                           ;*                      - Set the vector table
+                                 entries with the exceptions ISR 
+   12                           ;*                        address.
+   13                           ;*                      - Configure the system
+                                 clock and the external SRAM mounted on
+                                 
+   14                           ;*                        STM324xG-EVAL board
+                                 to be used as data memory (optional,
+                                 
+   15                           ;*                        to be enabled by
+                                 user)
+   16                           ;*                      - Branches to main in
+                                 the C library (which eventually
+   17                           ;*                        calls main()).
+   18                           ;*                      After Reset the
+                                 Cortex-M4 processor is in Thread mode,
+   19                           ;*                      priority is Privileged
+                                , and the Stack is set to Main.
+   20                           ;*********************************************
+                                ***********************************
+   21                           ;* 
+   22                           ;* Licensed under MCD-ST Liberty SW License
+                                 Agreement V2, (the "License");
+   23                           ;* You may not use this file except in
+                                 compliance with the License.
+   24                           ;* You may obtain a copy of the License
+                                 at:
+   25                           ;* 
+   26                           ;*        http://www.st.com/software_license_a
+                                greement_liberty_v2
+   27                           ;* 
+   28                           ;* Unless required by applicable law or agreed
+                                 to in writing, software 
+   29                           ;* distributed under the License is distribute
+                                d on an "AS IS" BASIS, 
+   30                           ;* WITHOUT WARRANTIES OR CONDITIONS OF ANY
+                                 KIND, either express or implied.
+   31                           ;* See the License for the specific language
+                                 governing permissions and
+   32                           ;* limitations under the License.
+   33                           ;* 
+   34                           ;*********************************************
+                                **********************************/
+   35                           ;
+   36                           ;
+   37                           ; The modules in this file are included in the
+                                 libraries, and may be replaced
+   38                           ; by any user-defined modules that define the
+                                 PUBLIC symbol _program_start or
+   39                           ; a user defined start symbol.
+   40                           ; To override the cstartup defined in the
+                                 library, simply add your modified
+   41                           ; version to the workbench project.
+   42                           ;
+   43                           ; The vector table is normally located at
+                                 address 0.
+   44                           ; When debugging in RAM, it can be located in
+                                 RAM, aligned to at least 2^6.
+   45                           ; The name "__vector_table" has special
+                                 meaning for C-SPY:
+   46                           ; it is where the SP start value is found, and
+                                 the NVIC vector
+   47                           ; table register (VTOR) is initialized to this
+                                 address if != 0.
+   48                           ;
+   49                           ; Cortex-M version
+   50                           ;
+   51                           
+   52                                   MODULE  ?cstartup
+   53                           
+   54                                   ;; Forward declaration of sections.
+   55                                   SECTION CSTACK:DATA:NOROOT(3)
+   56                           
+   57                                   SECTION .intvec:CODE:NOROOT(2)
+   58                           
+   59                                   EXTERN  __iar_program_start
+   60                                   EXTERN  SystemInit
+   61                                   PUBLIC  __vector_table
+   62                           
+   63                                   DATA
+   64                           __vector_table
+   65    00000000 ........              DCD     sfe(CSTACK)
+   66    00000004 ........              DCD     Reset_Handler             ;
+  Reset Handler
+   67                           
+   68    00000008 ........              DCD     NMI_Handler               ; NMI
+  Handler
+   69    0000000C ........              DCD     HardFault_Handler         ;
+  Hard Fault Handler
+   70    00000010 ........              DCD     MemManage_Handler         ; MPU
+  Fault Handler
+   71    00000014 ........              DCD     BusFault_Handler          ; Bus
+  Fault Handler
+   72    00000018 ........              DCD     UsageFault_Handler        ;
+  Usage Fault Handler
+   73    0000001C 00000000              DCD     0                         ;
+  Reserved
+   74    00000020 00000000              DCD     0                         ;
+  Reserved
+   75    00000024 00000000              DCD     0                         ;
+  Reserved
+   76    00000028 00000000              DCD     0                         ;
+  Reserved
+   77    0000002C ........              DCD     SVC_Handler               ;
+  SVCall Handler
+   78    00000030 ........              DCD     DebugMon_Handler          ;
+  Debug Monitor Handler
+   79    00000034 00000000              DCD     0                         ;
+  Reserved
+   80    00000038 ........              DCD     PendSV_Handler            ;
+  PendSV Handler
+   81    0000003C ........              DCD     SysTick_Handler           ;
+  SysTick Handler
+   82                           
+   83                                    ; External Interrupts
+   84    00000040 ........              DCD     WWDG_IRQHandler                
+    ; Window WatchDog                                        
+   85    00000044 ........              DCD     PVD_IRQHandler                 
+    ; PVD through EXTI Line detection                        
+   86    00000048 ........              DCD     TAMP_STAMP_IRQHandler          
+    ; Tamper and TimeStamps through the EXTI line            
+   87    0000004C ........              DCD     RTC_WKUP_IRQHandler            
+    ; RTC Wakeup through the EXTI line                       
+   88    00000050 ........              DCD     FLASH_IRQHandler               
+    ; FLASH                                           
+   89    00000054 ........              DCD     RCC_IRQHandler                 
+    ; RCC                                             
+   90    00000058 ........              DCD     EXTI0_IRQHandler               
+    ; EXTI Line0                                             
+   91    0000005C ........              DCD     EXTI1_IRQHandler               
+    ; EXTI Line1                                             
+   92    00000060 ........              DCD     EXTI2_IRQHandler               
+    ; EXTI Line2                                             
+   93    00000064 ........              DCD     EXTI3_IRQHandler               
+    ; EXTI Line3                                             
+   94    00000068 ........              DCD     EXTI4_IRQHandler               
+    ; EXTI Line4                                             
+   95    0000006C ........              DCD     DMA1_Stream0_IRQHandler        
+    ; DMA1 Stream 0                                   
+   96    00000070 ........              DCD     DMA1_Stream1_IRQHandler        
+    ; DMA1 Stream 1                                   
+   97    00000074 ........              DCD     DMA1_Stream2_IRQHandler        
+    ; DMA1 Stream 2                                   
+   98    00000078 ........              DCD     DMA1_Stream3_IRQHandler        
+    ; DMA1 Stream 3                                   
+   99    0000007C ........              DCD     DMA1_Stream4_IRQHandler        
+    ; DMA1 Stream 4                                   
+  100    00000080 ........              DCD     DMA1_Stream5_IRQHandler        
+    ; DMA1 Stream 5                                   
+  101    00000084 ........              DCD     DMA1_Stream6_IRQHandler        
+    ; DMA1 Stream 6                                   
+  102    00000088 ........              DCD     ADC_IRQHandler                 
+    ; ADC1, ADC2 and ADC3s                            
+  103    0000008C ........              DCD     CAN1_TX_IRQHandler             
+    ; CAN1 TX                                                
+  104    00000090 ........              DCD     CAN1_RX0_IRQHandler            
+    ; CAN1 RX0                                               
+  105    00000094 ........              DCD     CAN1_RX1_IRQHandler            
+    ; CAN1 RX1                                               
+  106    00000098 ........              DCD     CAN1_SCE_IRQHandler            
+    ; CAN1 SCE                                               
+  107    0000009C ........              DCD     EXTI9_5_IRQHandler             
+    ; External Line[9:5]s                                    
+  108    000000A0 ........              DCD     TIM1_BRK_TIM9_IRQHandler       
+    ; TIM1 Break and TIM9                   
+  109    000000A4 ........              DCD     TIM1_UP_TIM10_IRQHandler       
+    ; TIM1 Update and TIM10                 
+  110    000000A8 ........              DCD     TIM1_TRG_COM_TIM11_IRQHandler  
+    ; TIM1 Trigger and Commutation and TIM11
+  111    000000AC ........              DCD     TIM1_CC_IRQHandler             
+    ; TIM1 Capture Compare                                   
+  112    000000B0 ........              DCD     TIM2_IRQHandler                
+    ; TIM2                                            
+  113    000000B4 ........              DCD     TIM3_IRQHandler                
+    ; TIM3                                            
+  114    000000B8 ........              DCD     TIM4_IRQHandler                
+    ; TIM4                                            
+  115    000000BC ........              DCD     I2C1_EV_IRQHandler             
+    ; I2C1 Event                                             
+  116    000000C0 ........              DCD     I2C1_ER_IRQHandler             
+    ; I2C1 Error                                             
+  117    000000C4 ........              DCD     I2C2_EV_IRQHandler             
+    ; I2C2 Event                                             
+  118    000000C8 ........              DCD     I2C2_ER_IRQHandler             
+    ; I2C2 Error                                               
+  119    000000CC ........              DCD     SPI1_IRQHandler                
+    ; SPI1                                            
+  120    000000D0 ........              DCD     SPI2_IRQHandler                
+    ; SPI2                                            
+  121    000000D4 ........              DCD     USART1_IRQHandler              
+    ; USART1                                          
+  122    000000D8 ........              DCD     USART2_IRQHandler              
+    ; USART2                                          
+  123    000000DC ........              DCD     USART3_IRQHandler              
+    ; USART3                                          
+  124    000000E0 ........              DCD     EXTI15_10_IRQHandler           
+    ; External Line[15:10]s                                  
+  125    000000E4 ........              DCD     RTC_Alarm_IRQHandler           
+    ; RTC Alarm (A and B) through EXTI Line                  
+  126    000000E8 ........              DCD     OTG_FS_WKUP_IRQHandler         
+    ; USB OTG FS Wakeup through EXTI line                        
+  127    000000EC ........              DCD     TIM8_BRK_TIM12_IRQHandler      
+    ; TIM8 Break and TIM12                  
+  128    000000F0 ........              DCD     TIM8_UP_TIM13_IRQHandler       
+    ; TIM8 Update and TIM13                 
+  129    000000F4 ........              DCD     TIM8_TRG_COM_TIM14_IRQHandler  
+    ; TIM8 Trigger and Commutation and TIM14
+  130    000000F8 ........              DCD     TIM8_CC_IRQHandler             
+    ; TIM8 Capture Compare                                   
+  131    000000FC ........              DCD     DMA1_Stream7_IRQHandler        
+    ; DMA1 Stream7                                           
+  132    00000100 ........              DCD     FSMC_IRQHandler                
+    ; FSMC                                            
+  133    00000104 ........              DCD     SDIO_IRQHandler                
+    ; SDIO                                            
+  134    00000108 ........              DCD     TIM5_IRQHandler                
+    ; TIM5                                            
+  135    0000010C ........              DCD     SPI3_IRQHandler                
+    ; SPI3                                            
+  136    00000110 ........              DCD     UART4_IRQHandler               
+    ; UART4                                           
+  137    00000114 ........              DCD     UART5_IRQHandler               
+    ; UART5                                           
+  138    00000118 ........              DCD     TIM6_DAC_IRQHandler            
+    ; TIM6 and DAC1&2 underrun errors                   
+  139    0000011C ........              DCD     TIM7_IRQHandler                
+    ; TIM7                   
+  140    00000120 ........              DCD     DMA2_Stream0_IRQHandler        
+    ; DMA2 Stream 0                                   
+  141    00000124 ........              DCD     DMA2_Stream1_IRQHandler        
+    ; DMA2 Stream 1                                   
+  142    00000128 ........              DCD     DMA2_Stream2_IRQHandler        
+    ; DMA2 Stream 2                                   
+  143    0000012C ........              DCD     DMA2_Stream3_IRQHandler        
+    ; DMA2 Stream 3                                   
+  144    00000130 ........              DCD     DMA2_Stream4_IRQHandler        
+    ; DMA2 Stream 4                                   
+  145    00000134 ........              DCD     ETH_IRQHandler                 
+    ; Ethernet                                        
+  146    00000138 ........              DCD     ETH_WKUP_IRQHandler            
+    ; Ethernet Wakeup through EXTI line                      
+  147    0000013C ........              DCD     CAN2_TX_IRQHandler             
+    ; CAN2 TX                                                
+  148    00000140 ........              DCD     CAN2_RX0_IRQHandler            
+    ; CAN2 RX0                                               
+  149    00000144 ........              DCD     CAN2_RX1_IRQHandler            
+    ; CAN2 RX1                                               
+  150    00000148 ........              DCD     CAN2_SCE_IRQHandler            
+    ; CAN2 SCE                                               
+  151    0000014C ........              DCD     OTG_FS_IRQHandler              
+    ; USB OTG FS                                      
+  152    00000150 ........              DCD     DMA2_Stream5_IRQHandler        
+    ; DMA2 Stream 5                                   
+  153    00000154 ........              DCD     DMA2_Stream6_IRQHandler        
+    ; DMA2 Stream 6                                   
+  154    00000158 ........              DCD     DMA2_Stream7_IRQHandler        
+    ; DMA2 Stream 7                                   
+  155    0000015C ........              DCD     USART6_IRQHandler              
+    ; USART6                                           
+  156    00000160 ........              DCD     I2C3_EV_IRQHandler             
+    ; I2C3 event                                             
+  157    00000164 ........              DCD     I2C3_ER_IRQHandler             
+    ; I2C3 error                                             
+  158    00000168 ........              DCD     OTG_HS_EP1_OUT_IRQHandler      
+    ; USB OTG HS End Point 1 Out                      
+  159    0000016C ........              DCD     OTG_HS_EP1_IN_IRQHandler       
+    ; USB OTG HS End Point 1 In                       
+  160    00000170 ........              DCD     OTG_HS_WKUP_IRQHandler         
+    ; USB OTG HS Wakeup through EXTI                         
+  161    00000174 ........              DCD     OTG_HS_IRQHandler              
+    ; USB OTG HS                                      
+  162    00000178 ........              DCD     DCMI_IRQHandler                
+    ; DCMI                                            
+  163    0000017C ........              DCD     CRYP_IRQHandler                
+    ; CRYP crypto                                     
+  164    00000180 ........              DCD     HASH_RNG_IRQHandler            
+    ; Hash and Rng
+  165    00000184 ........              DCD     FPU_IRQHandler                 
+    ; FPU
+  166                               
+  167                           ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                                ;;;;;;
+  168                           ;;
+  169                           ;; Default interrupt handlers.
+  170                           ;;
+  171                                   THUMB
+  172                                   PUBWEAK Reset_Handler
+  173                                   SECTION .text:CODE:REORDER:NOROOT(2)
+  174                           Reset_Handler
+  175                           
+  176    00000000 0148                  LDR     R0, =SystemInit
+  177    00000002 8047                  BLX     R0
+  178    00000004 0148                  LDR     R0, =__iar_program_start
+  179    00000006 0047                  BX      R0
+  180                           
+  181                                   PUBWEAK NMI_Handler
+  181.1                                  TABLE
+  181.2  00000008 ........              Reference on line 176
+  181.3  0000000C ........              Reference on line 178
+  182                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  183                           NMI_Handler
+  184    00000000 ........              B NMI_Handler
+  185                           
+  186                                   PUBWEAK HardFault_Handler
+  187                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  188                           HardFault_Handler
+  189    00000000 ........              B HardFault_Handler
+  190                           
+  191                                   PUBWEAK MemManage_Handler
+  192                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  193                           MemManage_Handler
+  194    00000000 ........              B MemManage_Handler
+  195                           
+  196                                   PUBWEAK BusFault_Handler
+  197                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  198                           BusFault_Handler
+  199    00000000 ........              B BusFault_Handler
+  200                           
+  201                                   PUBWEAK UsageFault_Handler
+  202                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  203                           UsageFault_Handler
+  204    00000000 ........              B UsageFault_Handler
+  205                           
+  206                                   PUBWEAK SVC_Handler
+  207                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  208                           SVC_Handler
+  209    00000000 ........              B SVC_Handler
+  210                           
+  211                                   PUBWEAK DebugMon_Handler
+  212                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  213                           DebugMon_Handler
+  214    00000000 ........              B DebugMon_Handler
+  215                           
+  216                                   PUBWEAK PendSV_Handler
+  217                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  218                           PendSV_Handler
+  219    00000000 ........              B PendSV_Handler
+  220                           
+  221                                   PUBWEAK SysTick_Handler
+  222                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  223                           SysTick_Handler
+  224    00000000 ........              B SysTick_Handler
+  225                           
+  226                                   PUBWEAK WWDG_IRQHandler
+  227                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  228                           WWDG_IRQHandler  
+  229    00000000 ........              B WWDG_IRQHandler
+  230                           
+  231                                   PUBWEAK PVD_IRQHandler
+  232                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  233                           PVD_IRQHandler  
+  234    00000000 ........              B PVD_IRQHandler
+  235                           
+  236                                   PUBWEAK TAMP_STAMP_IRQHandler
+  237                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  238                           TAMP_STAMP_IRQHandler  
+  239    00000000 ........              B TAMP_STAMP_IRQHandler
+  240                           
+  241                                   PUBWEAK RTC_WKUP_IRQHandler
+  242                                   SECTION .text:CODE:REORDER:NOROOT(1) 
+                                 
+  243                           RTC_WKUP_IRQHandler  
+  244    00000000 ........              B RTC_WKUP_IRQHandler
+  245                           
+  246                                   PUBWEAK FLASH_IRQHandler
+  247                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  248                           FLASH_IRQHandler  
+  249    00000000 ........              B FLASH_IRQHandler
+  250                           
+  251                                   PUBWEAK RCC_IRQHandler
+  252                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  253                           RCC_IRQHandler  
+  254    00000000 ........              B RCC_IRQHandler
+  255                           
+  256                                   PUBWEAK EXTI0_IRQHandler
+  257                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  258                           EXTI0_IRQHandler  
+  259    00000000 ........              B EXTI0_IRQHandler
+  260                           
+  261                                   PUBWEAK EXTI1_IRQHandler
+  262                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  263                           EXTI1_IRQHandler  
+  264    00000000 ........              B EXTI1_IRQHandler
+  265                           
+  266                                   PUBWEAK EXTI2_IRQHandler
+  267                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  268                           EXTI2_IRQHandler  
+  269    00000000 ........              B EXTI2_IRQHandler
+  270                           
+  271                                   PUBWEAK EXTI3_IRQHandler
+  272                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  273                           EXTI3_IRQHandler
+  274    00000000 ........              B EXTI3_IRQHandler
+  275                           
+  276                                   PUBWEAK EXTI4_IRQHandler
+  277                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  278                           EXTI4_IRQHandler  
+  279    00000000 ........              B EXTI4_IRQHandler
+  280                           
+  281                                   PUBWEAK DMA1_Stream0_IRQHandler
+  282                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  283                           DMA1_Stream0_IRQHandler  
+  284    00000000 ........              B DMA1_Stream0_IRQHandler
+  285                           
+  286                                   PUBWEAK DMA1_Stream1_IRQHandler
+  287                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  288                           DMA1_Stream1_IRQHandler  
+  289    00000000 ........              B DMA1_Stream1_IRQHandler
+  290                           
+  291                                   PUBWEAK DMA1_Stream2_IRQHandler
+  292                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  293                           DMA1_Stream2_IRQHandler  
+  294    00000000 ........              B DMA1_Stream2_IRQHandler
+  295                           
+  296                                   PUBWEAK DMA1_Stream3_IRQHandler
+  297                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  298                           DMA1_Stream3_IRQHandler  
+  299    00000000 ........              B DMA1_Stream3_IRQHandler
+  300                           
+  301                                   PUBWEAK DMA1_Stream4_IRQHandler
+  302                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  303                           DMA1_Stream4_IRQHandler  
+  304    00000000 ........              B DMA1_Stream4_IRQHandler
+  305                           
+  306                                   PUBWEAK DMA1_Stream5_IRQHandler
+  307                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  308                           DMA1_Stream5_IRQHandler  
+  309    00000000 ........              B DMA1_Stream5_IRQHandler
+  310                           
+  311                                   PUBWEAK DMA1_Stream6_IRQHandler
+  312                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  313                           DMA1_Stream6_IRQHandler  
+  314    00000000 ........              B DMA1_Stream6_IRQHandler
+  315                           
+  316                                   PUBWEAK ADC_IRQHandler
+  317                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  318                           ADC_IRQHandler  
+  319    00000000 ........              B ADC_IRQHandler
+  320                           
+  321                                   PUBWEAK CAN1_TX_IRQHandler
+  322                                   SECTION .text:CODE:REORDER:NOROOT(1)
+                                 
+  323                           CAN1_TX_IRQHandler  
+  324    00000000 ........              B CAN1_TX_IRQHandler
+  325                           
+  326                                   PUBWEAK CAN1_RX0_IRQHandler
+  327                                   SECTION .text:CODE:REORDER:NOROOT(1) 
+                                 
+  328                           CAN1_RX0_IRQHandler  
+  329    00000000 ........              B CAN1_RX0_IRQHandler
+  330                           
+  331                                   PUBWEAK CAN1_RX1_IRQHandler
+  332                                   SECTION .text:CODE:REORDER:NOROOT(1) 
+                                 
+  333                           CAN1_RX1_IRQHandler  
+  334    00000000 ........              B CAN1_RX1_IRQHandler
+  335                           
+  336                                   PUBWEAK CAN1_SCE_IRQHandler
+  337                                   SECTION .text:CODE:REORDER:NOROOT(1) 
+                                 
+  338                           CAN1_SCE_IRQHandler  
+  339    00000000 ........              B CAN1_SCE_IRQHandler
+  340                           
+  341                                   PUBWEAK EXTI9_5_IRQHandler
+  342                                   SECTION .text:CODE:REORDER:NOROOT(1)
+                                 
+  343                           EXTI9_5_IRQHandler  
+  344    00000000 ........              B EXTI9_5_IRQHandler
+  345                           
+  346                                   PUBWEAK TIM1_BRK_TIM9_IRQHandler
+  347                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  348                           TIM1_BRK_TIM9_IRQHandler  
+  349    00000000 ........              B TIM1_BRK_TIM9_IRQHandler
+  350                           
+  351                                   PUBWEAK TIM1_UP_TIM10_IRQHandler
+  352                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  353                           TIM1_UP_TIM10_IRQHandler  
+  354    00000000 ........              B TIM1_UP_TIM10_IRQHandler
+  355                           
+  356                                   PUBWEAK TIM1_TRG_COM_TIM11_IRQHandler
+  357                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  358                           TIM1_TRG_COM_TIM11_IRQHandler  
+  359    00000000 ........              B TIM1_TRG_COM_TIM11_IRQHandler
+  360                                   
+  361                                   PUBWEAK TIM1_CC_IRQHandler
+  362                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  363                           TIM1_CC_IRQHandler  
+  364    00000000 ........              B TIM1_CC_IRQHandler
+  365                           
+  366                                   PUBWEAK TIM2_IRQHandler
+  367                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  368                           TIM2_IRQHandler  
+  369    00000000 ........              B TIM2_IRQHandler
+  370                           
+  371                                   PUBWEAK TIM3_IRQHandler
+  372                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  373                           TIM3_IRQHandler  
+  374    00000000 ........              B TIM3_IRQHandler
+  375                           
+  376                                   PUBWEAK TIM4_IRQHandler
+  377                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  378                           TIM4_IRQHandler  
+  379    00000000 ........              B TIM4_IRQHandler
+  380                           
+  381                                   PUBWEAK I2C1_EV_IRQHandler
+  382                                   SECTION .text:CODE:REORDER:NOROOT(1)
+                                 
+  383                           I2C1_EV_IRQHandler  
+  384    00000000 ........              B I2C1_EV_IRQHandler
+  385                           
+  386                                   PUBWEAK I2C1_ER_IRQHandler
+  387                                   SECTION .text:CODE:REORDER:NOROOT(1)
+                                 
+  388                           I2C1_ER_IRQHandler  
+  389    00000000 ........              B I2C1_ER_IRQHandler
+  390                           
+  391                                   PUBWEAK I2C2_EV_IRQHandler
+  392                                   SECTION .text:CODE:REORDER:NOROOT(1)
+                                 
+  393                           I2C2_EV_IRQHandler  
+  394    00000000 ........              B I2C2_EV_IRQHandler
+  395                           
+  396                                   PUBWEAK I2C2_ER_IRQHandler
+  397                                   SECTION .text:CODE:REORDER:NOROOT(1)
+                                 
+  398                           I2C2_ER_IRQHandler  
+  399    00000000 ........              B I2C2_ER_IRQHandler
+  400                           
+  401                                   PUBWEAK SPI1_IRQHandler
+  402                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  403                           SPI1_IRQHandler  
+  404    00000000 ........              B SPI1_IRQHandler
+  405                           
+  406                                   PUBWEAK SPI2_IRQHandler
+  407                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  408                           SPI2_IRQHandler  
+  409    00000000 ........              B SPI2_IRQHandler
+  410                           
+  411                                   PUBWEAK USART1_IRQHandler
+  412                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  413                           USART1_IRQHandler  
+  414    00000000 ........              B USART1_IRQHandler
+  415                           
+  416                                   PUBWEAK USART2_IRQHandler
+  417                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  418                           USART2_IRQHandler  
+  419    00000000 ........              B USART2_IRQHandler
+  420                           
+  421                                   PUBWEAK USART3_IRQHandler
+  422                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  423                           USART3_IRQHandler  
+  424    00000000 ........              B USART3_IRQHandler
+  425                           
+  426                                   PUBWEAK EXTI15_10_IRQHandler
+  427                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                 
+  428                           EXTI15_10_IRQHandler  
+  429    00000000 ........              B EXTI15_10_IRQHandler
+  430                           
+  431                                   PUBWEAK RTC_Alarm_IRQHandler
+  432                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                 
+  433                           RTC_Alarm_IRQHandler  
+  434    00000000 ........              B RTC_Alarm_IRQHandler
+  435                           
+  436                                   PUBWEAK OTG_FS_WKUP_IRQHandler
+  437                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  438                           OTG_FS_WKUP_IRQHandler  
+  439    00000000 ........              B OTG_FS_WKUP_IRQHandler
+  440                                 
+  441                                   PUBWEAK TIM8_BRK_TIM12_IRQHandler
+  442                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  443                           TIM8_BRK_TIM12_IRQHandler  
+  444    00000000 ........              B TIM8_BRK_TIM12_IRQHandler
+  445                           
+  446                                   PUBWEAK TIM8_UP_TIM13_IRQHandler
+  447                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  448                           TIM8_UP_TIM13_IRQHandler  
+  449    00000000 ........              B TIM8_UP_TIM13_IRQHandler
+  450                           
+  451                                   PUBWEAK TIM8_TRG_COM_TIM14_IRQHandler
+  452                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  453                           TIM8_TRG_COM_TIM14_IRQHandler  
+  454    00000000 ........              B TIM8_TRG_COM_TIM14_IRQHandler
+  455                           
+  456                                   PUBWEAK TIM8_CC_IRQHandler
+  457                                   SECTION .text:CODE:REORDER:NOROOT(1)
+                                 
+  458                           TIM8_CC_IRQHandler  
+  459    00000000 ........              B TIM8_CC_IRQHandler
+  460                           
+  461                                   PUBWEAK DMA1_Stream7_IRQHandler
+  462                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  463                           DMA1_Stream7_IRQHandler  
+  464    00000000 ........              B DMA1_Stream7_IRQHandler
+  465                           
+  466                                   PUBWEAK FSMC_IRQHandler
+  467                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  468                           FSMC_IRQHandler  
+  469    00000000 ........              B FSMC_IRQHandler
+  470                           
+  471                                   PUBWEAK SDIO_IRQHandler
+  472                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  473                           SDIO_IRQHandler  
+  474    00000000 ........              B SDIO_IRQHandler
+  475                           
+  476                                   PUBWEAK TIM5_IRQHandler
+  477                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  478                           TIM5_IRQHandler  
+  479    00000000 ........              B TIM5_IRQHandler
+  480                           
+  481                                   PUBWEAK SPI3_IRQHandler
+  482                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  483                           SPI3_IRQHandler  
+  484    00000000 ........              B SPI3_IRQHandler
+  485                           
+  486                                   PUBWEAK UART4_IRQHandler
+  487                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  488                           UART4_IRQHandler  
+  489    00000000 ........              B UART4_IRQHandler
+  490                           
+  491                                   PUBWEAK UART5_IRQHandler
+  492                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  493                           UART5_IRQHandler  
+  494    00000000 ........              B UART5_IRQHandler
+  495                           
+  496                                   PUBWEAK TIM6_DAC_IRQHandler
+  497                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                 
+  498                           TIM6_DAC_IRQHandler  
+  499    00000000 ........              B TIM6_DAC_IRQHandler
+  500                           
+  501                                   PUBWEAK TIM7_IRQHandler
+  502                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                 
+  503                           TIM7_IRQHandler  
+  504    00000000 ........              B TIM7_IRQHandler
+  505                           
+  506                                   PUBWEAK DMA2_Stream0_IRQHandler
+  507                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  508                           DMA2_Stream0_IRQHandler  
+  509    00000000 ........              B DMA2_Stream0_IRQHandler
+  510                           
+  511                                   PUBWEAK DMA2_Stream1_IRQHandler
+  512                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  513                           DMA2_Stream1_IRQHandler  
+  514    00000000 ........              B DMA2_Stream1_IRQHandler
+  515                           
+  516                                   PUBWEAK DMA2_Stream2_IRQHandler
+  517                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  518                           DMA2_Stream2_IRQHandler  
+  519    00000000 ........              B DMA2_Stream2_IRQHandler
+  520                           
+  521                                   PUBWEAK DMA2_Stream3_IRQHandler
+  522                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  523                           DMA2_Stream3_IRQHandler  
+  524    00000000 ........              B DMA2_Stream3_IRQHandler
+  525                           
+  526                                   PUBWEAK DMA2_Stream4_IRQHandler
+  527                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  528                           DMA2_Stream4_IRQHandler  
+  529    00000000 ........              B DMA2_Stream4_IRQHandler
+  530                           
+  531                                   PUBWEAK ETH_IRQHandler
+  532                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  533                           ETH_IRQHandler  
+  534    00000000 ........              B ETH_IRQHandler
+  535                           
+  536                                   PUBWEAK ETH_WKUP_IRQHandler
+  537                                   SECTION .text:CODE:REORDER:NOROOT(1) 
+                                 
+  538                           ETH_WKUP_IRQHandler  
+  539    00000000 ........              B ETH_WKUP_IRQHandler
+  540                           
+  541                                   PUBWEAK CAN2_TX_IRQHandler
+  542                                   SECTION .text:CODE:REORDER:NOROOT(1)
+                                 
+  543                           CAN2_TX_IRQHandler  
+  544    00000000 ........              B CAN2_TX_IRQHandler
+  545                           
+  546                                   PUBWEAK CAN2_RX0_IRQHandler
+  547                                   SECTION .text:CODE:REORDER:NOROOT(1) 
+                                 
+  548                           CAN2_RX0_IRQHandler  
+  549    00000000 ........              B CAN2_RX0_IRQHandler
+  550                           
+  551                                   PUBWEAK CAN2_RX1_IRQHandler
+  552                                   SECTION .text:CODE:REORDER:NOROOT(1) 
+                                 
+  553                           CAN2_RX1_IRQHandler  
+  554    00000000 ........              B CAN2_RX1_IRQHandler
+  555                           
+  556                                   PUBWEAK CAN2_SCE_IRQHandler
+  557                                   SECTION .text:CODE:REORDER:NOROOT(1) 
+                                 
+  558                           CAN2_SCE_IRQHandler  
+  559    00000000 ........              B CAN2_SCE_IRQHandler
+  560                           
+  561                                   PUBWEAK OTG_FS_IRQHandler
+  562                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  563                           OTG_FS_IRQHandler  
+  564    00000000 ........              B OTG_FS_IRQHandler
+  565                           
+  566                                   PUBWEAK DMA2_Stream5_IRQHandler
+  567                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  568                           DMA2_Stream5_IRQHandler  
+  569    00000000 ........              B DMA2_Stream5_IRQHandler
+  570                           
+  571                                   PUBWEAK DMA2_Stream6_IRQHandler
+  572                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  573                           DMA2_Stream6_IRQHandler  
+  574    00000000 ........              B DMA2_Stream6_IRQHandler
+  575                           
+  576                                   PUBWEAK DMA2_Stream7_IRQHandler
+  577                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  578                           DMA2_Stream7_IRQHandler  
+  579    00000000 ........              B DMA2_Stream7_IRQHandler
+  580                           
+  581                                   PUBWEAK USART6_IRQHandler
+  582                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  583                           USART6_IRQHandler  
+  584    00000000 ........              B USART6_IRQHandler
+  585                           
+  586                                   PUBWEAK I2C3_EV_IRQHandler
+  587                                   SECTION .text:CODE:REORDER:NOROOT(1)
+                                 
+  588                           I2C3_EV_IRQHandler  
+  589    00000000 ........              B I2C3_EV_IRQHandler
+  590                           
+  591                                   PUBWEAK I2C3_ER_IRQHandler
+  592                                   SECTION .text:CODE:REORDER:NOROOT(1)
+                                 
+  593                           I2C3_ER_IRQHandler  
+  594    00000000 ........              B I2C3_ER_IRQHandler
+  595                           
+  596                                   PUBWEAK OTG_HS_EP1_OUT_IRQHandler
+  597                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  598                           OTG_HS_EP1_OUT_IRQHandler  
+  599    00000000 ........              B OTG_HS_EP1_OUT_IRQHandler
+  600                           
+  601                                   PUBWEAK OTG_HS_EP1_IN_IRQHandler
+  602                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  603                           OTG_HS_EP1_IN_IRQHandler  
+  604    00000000 ........              B OTG_HS_EP1_IN_IRQHandler
+  605                           
+  606                                   PUBWEAK OTG_HS_WKUP_IRQHandler
+  607                                   SECTION .text:CODE:REORDER:NOROOT(1)  
+                                  
+  608                           OTG_HS_WKUP_IRQHandler  
+  609    00000000 ........              B OTG_HS_WKUP_IRQHandler
+  610                           
+  611                                   PUBWEAK OTG_HS_IRQHandler
+  612                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  613                           OTG_HS_IRQHandler  
+  614    00000000 ........              B OTG_HS_IRQHandler
+  615                           
+  616                                   PUBWEAK DCMI_IRQHandler
+  617                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  618                           DCMI_IRQHandler  
+  619    00000000 ........              B DCMI_IRQHandler
+  620                           
+  621                                   PUBWEAK CRYP_IRQHandler
+  622                                   SECTION .text:CODE:REORDER:NOROOT(1)
+  623                           CRYP_IRQHandler  
+  624    00000000 ........              B CRYP_IRQHandler
+  625                           
+  626                                   PUBWEAK HASH_RNG_IRQHandler
+  627                                   SECTION .text:CODE:REORDER:NOROOT(1) 
+                                 
+  628                           HASH_RNG_IRQHandler  
+  629    00000000 ........              B HASH_RNG_IRQHandler
+  630                           
+  631                                   PUBWEAK FPU_IRQHandler
+  632                                   SECTION .text:CODE:REORDER:NOROOT(1) 
+                                 
+  633                           FPU_IRQHandler  
+  634    00000000 ........              B FPU_IRQHandler
+  635                           
+  636                                   END
+##############################
+#           CRC:0            #
+#        Errors:   0         #
+#        Warnings: 0         #
+#         Bytes: 772         #
+##############################
+
+
+
+

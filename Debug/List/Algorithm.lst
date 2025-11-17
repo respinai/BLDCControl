@@ -1,0 +1,127 @@
+###############################################################################
+#
+# IAR ANSI C/C++ Compiler V7.40.3.8902/W32 for ARM        05/Nov/2025  15:02:25
+# Copyright 1999-2015 IAR Systems AB.
+#
+#    Cpu mode     =  thumb
+#    Endian       =  little
+#    Source file  =  
+#        D:\Turbo Fan\Codes\14030723 BLDC-valve2
+#        added\modules\Source\Algorithm.c
+#    Command line =  
+#        "D:\Turbo Fan\Codes\14030723 BLDC-valve2
+#        added\modules\Source\Algorithm.c" -D USE_STDPERIPH_DRIVER -D
+#        STM32F40XX -lC "D:\Turbo Fan\Codes\14030723 BLDC-valve2
+#        added\Debug\List\" -o "D:\Turbo Fan\Codes\14030723 BLDC-valve2
+#        added\Debug\Obj\" --no_cse --no_unroll --no_inline --no_code_motion
+#        --no_tbaa --no_clustering --no_scheduling --debug --endian=little
+#        --cpu=Cortex-M4 -e --fpu=VFPv4_sp --dlib_config "C:\Program Files
+#        (x86)\IAR Systems\Embedded Workbench
+#        7.2\arm\INC\c\DLib_Config_Normal.h" -I "D:\Turbo Fan\Codes\14030723
+#        BLDC-valve2 added\board\" -I "D:\Turbo Fan\Codes\14030723 BLDC-valve2
+#        added\app\" -I "D:\Turbo Fan\Codes\14030723 BLDC-valve2
+#        added\Libraries\CMSIS\Device\ST\STM32F4xx\Include\" -I "D:\Turbo
+#        Fan\Codes\14030723 BLDC-valve2
+#        added\Libraries\STM32F4xx_StdPeriph_Driver\inc\" -I "D:\Turbo
+#        Fan\Codes\14030723 BLDC-valve2 added\modules\Header\" -On
+#        --use_c++_inline -I "C:\Program Files (x86)\IAR Systems\Embedded
+#        Workbench 7.2\arm\CMSIS\Include\" --relaxed_fp
+#    List file    =  
+#        D:\Turbo Fan\Codes\14030723 BLDC-valve2 added\Debug\List\Algorithm.lst
+#    Object file  =  
+#        D:\Turbo Fan\Codes\14030723 BLDC-valve2 added\Debug\Obj\Algorithm.o
+#
+###############################################################################
+
+D:\Turbo Fan\Codes\14030723 BLDC-valve2 added\modules\Source\Algorithm.c
+      1          //------------------------------------------------------------------------------
+      2          // SAADAT Co 
+      3          // VENTILATOR 
+      4          // DEVELOPER : MOJTABA REZAEI 
+      5          // VER 1.0
+      6          // 
+      7          /*
+      8          |------------------------------------------------------------------------------|
+      9          |     	***		Include		***														   |
+     10          |------------------------------------------------------------------------------|
+     11          */
+     12          #include "Algorithm.h"
+     13          
+     14          
+     15          
+     16          /*
+     17          |------------------------------------------------------------------------------|
+     18          |		***		Defines		***														   |
+     19          |------------------------------------------------------------------------------|
+     20          */
+     21          //======================================================================================
+     22          
+     23          //======================================================================================
+     24          /*
+     25          
+     26          */
+     27          /*
+     28          |------------------------------------------------------------------------------|
+     29          |	      ***		Functions		***													   |
+     30          |------------------------------------------------------------------------------|
+     31          */
+     32          
+     33          
+     34          //------------------------------------------------------------------------------
+
+   \                                 In section .text, align 2, keep-with-next
+     35          void    Algorithm_Service (void)
+     36          { 
+     37             
+     38          }
+   \                     Algorithm_Service: (+1)
+   \   00000000   0x4770             BX       LR               ;; return
+     39          //------------------------------------------------------------------------------
+
+   \                                 In section .text, align 2, keep-with-next
+     40          void    Algorithm_50ms (void)
+     41          {
+     42             
+     43          }
+   \                     Algorithm_50ms: (+1)
+   \   00000000   0x4770             BX       LR               ;; return
+     44          //------------------------------------------------------------------------------
+
+   \                                 In section .text, align 2, keep-with-next
+     45          void    Algorithm_Init (void)
+     46          {
+     47            
+     48          }
+   \                     Algorithm_Init: (+1)
+   \   00000000   0x4770             BX       LR               ;; return
+     49          
+     50          //------------------------------------------------------------------------------
+     51          
+     52          //------------------------------------------------------------------------------
+     53          
+     54          
+
+   Maximum stack usage in bytes:
+
+   .cstack Function
+   ------- --------
+       0   Algorithm_50ms
+       0   Algorithm_Init
+       0   Algorithm_Service
+
+
+   Section sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+       2  Algorithm_50ms
+       2  Algorithm_Init
+       2  Algorithm_Service
+
+ 
+ 6 bytes in section .text
+ 
+ 6 bytes of CODE memory
+
+Errors: none
+Warnings: none
