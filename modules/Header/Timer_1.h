@@ -71,5 +71,6 @@ void PWM_Timer1(u8  ChanneL ,u8 NewState);
 void SetPWM_TIM3_Valve(u16 PulsePercent);
 u16    Control(u16 SpeedSet,u32 SpeedMotor, float KP,float KI);
 u16    Control_Flow(u16 Setpoint,float Flow_Exh , float KP,float KI);
+u16    Control_Pressure(u16 Setpoint,float Pressure , float KP,float KI);
 //------------------------------------------------------------------------------
 #endif      // _SAADAT_TIMERS_H

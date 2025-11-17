@@ -359,6 +359,32 @@ u16    Control_Flow(u16 Setpoint,float Flow_Exh , float KP,float KI)
  return Outputvalve;
  
 }
+
+u16    Control_Pressure(u16 Setpoint,float Pressure , float KP,float KI)
+{
+ float  PressErr = 0; 
+ float Outputvalve = 0;  
+ static float KItermPressure=0;
+
+ PressErr = (float)Setpoint - Pressure;
+ KItermPressure = KItermPressure + PressErr*0.0025f*KI;
+ if (KItermPressure>9000.0f)
+   KItermPressure = 9000.0f;
+ if(KItermPressure<0.0f)
+   KItermPressure=0.0f;
+ Outputvalve = PressErr*KP+KItermPressure;
+ if (Outputvalve>9000.0f)
+   Outputvalve = 9000.0f;
+ if(Outputvalve<0.0f)
+   Outputvalve=0.0f;
+ if (Setpoint==0U)
+ {
+   Outputvalve=0.0f;   
+   KItermPressure = 0.0f;
+ }
+ return (u16)Outputvalve;
+ 
+}
 void PWM_Timer1(u8  ChanneL ,u8 NewState)
 {
   if(ChanneL == M1_CH1)
