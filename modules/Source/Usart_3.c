@@ -169,7 +169,7 @@ void    RCV_data(u8 TempData)
             Packet_State = 1;         // Goto LEN
         break;
     case 1: /* LEN */ 
-        if (TempData == 13 )//|| TempData == 7 || TempData == 1  )
+        if (TempData == (u8)sizeof(STRUCT_PACKET_RCVPWM) )//|| TempData == 7 || TempData == 1  )
         {
             LEN_ = TempData+1;
             CS_ = 0xAA + LEN_;                   // Start Calculation CS     

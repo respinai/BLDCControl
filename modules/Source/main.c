@@ -28,7 +28,17 @@ u8 control_mode=0;
 u8 control_valve_mode = 0;
 static int PWM_ind=0;
 u8 iteration = 0;
-static int cnt_valve = 0;
+static const u16 MODE4_VALVE3_CLOSED_CMD = 8500U;
+static const u16 MODE4_BASE_FLOW = 5U;
+enum
+{
+  MODE4_PHASE_INHALATION = 0U,
+  MODE4_PHASE_EXHALATION = 1U
+};
+static u8 mode4_phase = MODE4_PHASE_INHALATION;
+static u32 mode4_tick_counter = 0U;
+static u32 mode4_ti_ticks = 0U;
+static u32 mode4_te_ticks = 0U;
 int Sample_arr[] = {809,798,677,785,842,865,746,734,994,595,951,963,914,621,689,720,865,637,882,624,854,787,907,880,959,954,720,873,663,592,892,790,781,959,836,839,940};
 int PWM_arr[] = {2000,3000,4000,5000,6000,7000,8000,2000,3000,4000,5000,6000,7000,8000,2000,3000,4000,5000,6000,
  7000,8000,2000,3000,4000,5000,6000,7000,8000,2000,3000,4000,5000,6000,7000,8000,2000,3000};
@@ -39,6 +49,24 @@ STRUCT_PACKET_PWM           PWMS = {
   .STEP = 20
     
 };
+
+static u32 Mode4_ConvertMsToTicks(u16 time_ms)
+{
+  u32 ticks = ((u32)time_ms * 2U) / 5U;
+  if(ticks == 0U)
+  {
+    ticks = 1U;
+  }
+  return ticks;
+}
+
+static void Mode4_ResetState(void)
+{
+  mode4_tick_counter = 0U;
+  mode4_phase = MODE4_PHASE_INHALATION;
+  mode4_ti_ticks = 0U;
+  mode4_te_ticks = 0U;
+}
 //--------------------------------------------------------------------------|
 int main(void)
 {
@@ -181,26 +209,47 @@ int main(void)
         
         
       }
-      if(RcvPWM.DATA.Control_mode== 4)
-      {
-        PWMS.TARGET = Control(RcvPWM.DATA.Speed_Setpoint,SpeedMotor.TIMER_CNT,(float)(RcvPWM.DATA.KP_Speed)/100,(float)(RcvPWM.DATA.KI_Speed)/100); 
-        if (cnt_valve==12000)
-        {cnt_valve = 0;}
-        if (cnt_valve<12001)
+        if(RcvPWM.DATA.Control_mode== 4)
         {
-         cnt_valve++; 
-        if (cnt_valve<5001)
-        {
-     
-       DATA_Sensors.Valve_CMD++;
+          PWMS.TARGET = Control(RcvPWM.DATA.Speed_Setpoint,SpeedMotor.TIMER_CNT,(float)(RcvPWM.DATA.KP_Speed)/100,(float)(RcvPWM.DATA.KI_Speed)/100); 
+          u32 requested_ti_ticks = Mode4_ConvertMsToTicks(RcvPWM.DATA.Ti);
+          u32 requested_te_ticks = Mode4_ConvertMsToTicks(RcvPWM.DATA.Te);
+          if((requested_ti_ticks != mode4_ti_ticks) || (requested_te_ticks != mode4_te_ticks))
+          {
+            mode4_ti_ticks = requested_ti_ticks;
+            mode4_te_ticks = requested_te_ticks;
+            mode4_tick_counter = 0U;
+            mode4_phase = MODE4_PHASE_INHALATION;
+          }
+          
+          u32 phase_limit = (mode4_phase == MODE4_PHASE_INHALATION) ? mode4_ti_ticks : mode4_te_ticks;
+          if(phase_limit == 0U)
+          {
+            phase_limit = 1U;
+          }
+          
+          if(mode4_phase == MODE4_PHASE_INHALATION)
+          {
+            DATA_Sensors.Valve_CMD = Control_Flow( RcvPWM.DATA.Flow_Setpoint , ((float) (DATA_Sensors.Flow_EXH)/100) ,KP_Flow, KI_Flow);
+            DATA_Sensors.Valve3_CMD = MODE4_VALVE3_CLOSED_CMD;
+          }
+          else
+          {
+            DATA_Sensors.Valve_CMD = Control_Flow( MODE4_BASE_FLOW , ((float) (DATA_Sensors.Flow_EXH)/100) ,KP_Flow, KI_Flow);
+            DATA_Sensors.Valve3_CMD = Control_Pressure(RcvPWM.DATA.PEEP, ((float)DATA_Sensors.Press_INH)/100, (float)(RcvPWM.DATA.KP_Pressure)/100, (float)(RcvPWM.DATA.KI_Pressure)/100);
+          }
+          
+          mode4_tick_counter++;
+          if(mode4_tick_counter >= phase_limit)
+          {
+            mode4_tick_counter = 0U;
+            mode4_phase = (mode4_phase == MODE4_PHASE_INHALATION) ? MODE4_PHASE_EXHALATION : MODE4_PHASE_INHALATION;
+          }
         }
         else
         {
-          if (DATA_Sensors.Valve_CMD > 0 )
-          {DATA_Sensors.Valve_CMD--; }
+          Mode4_ResetState();
         }
-        }
-      }
     }
     
     //-----------

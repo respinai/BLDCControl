@@ -23,6 +23,11 @@ typedef struct{
   u16       KP_Flow;     
   u16       KI_Flow;
   u16        Flow_Setpoint;
+  u16        Ti;
+  u16        Te;
+  u16        PEEP;
+  u16        KP_Pressure;
+  u16        KI_Pressure;
   u8        Control_mode;
 }STRUCT_PACKET_RCVPWM;
 typedef union{
